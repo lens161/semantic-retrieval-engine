@@ -3,6 +3,15 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# generator scripts
+generate_dummies.py
+
+# test data 
+# testdata/
+
+# venv
+.venv
+
 # C extensions
 *.so
 
