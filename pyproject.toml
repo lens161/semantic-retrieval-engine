@@ -1,2 +1,7 @@
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+filterwarnings = [
+    "ignore:.*SwigPy.*:DeprecationWarning",
+    "ignore:.*swig.*:DeprecationWarning"
+]
