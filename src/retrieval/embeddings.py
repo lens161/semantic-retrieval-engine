@@ -4,15 +4,13 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 
-model = SentenceTransformer("all-MiniLM-L6-v2") # pretrained model
-
 DATA_PATH = Path("data/testdata/documents.json")
 
 def load_documents():
     with DATA_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
     
-def create_doc_embeddings(documents: list[dict]) -> tuple[list[str], np.ndarray]:
+def create_doc_embeddings(documents: list[dict], model:SentenceTransformer) -> tuple[list[str], np.ndarray]:
     vectors = []
     doc_ids = []
 
@@ -26,7 +24,7 @@ def create_doc_embeddings(documents: list[dict]) -> tuple[list[str], np.ndarray]
     vector_matrix = np.vstack(vectors).astype("float32") # shape == (len(documents), 384)
     return doc_ids, vector_matrix
 
-def create_query_embeddings(queries: list[str]) -> np.ndarray:
+def create_query_embeddings(queries: list[str], model:SentenceTransformer) -> np.ndarray:
     vectors = model.encode(queries, convert_to_numpy=True, normalize_embeddings=True)
     vector_matrix = np.vstack(vectors).astype("float32")
     return vector_matrix

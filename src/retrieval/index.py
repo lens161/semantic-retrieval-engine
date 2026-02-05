@@ -22,11 +22,22 @@ class Index:
         self.index.add(vectors)
         self.doc_ids.extend(ids)
     
-    def search(self, queries, k):
-        D, I = self.index.search(queries, k) # D = similarity score, I = id in index
+    def search(self, query: np.ndarray, k: int):
+        if query.ndim == 1:
+            query = query.reshape(1, -1)
 
-        print(D)
-        print(I)
+        D, I = self.index.search(query, k)
+
+        results = [[]]
+
+        for i in range(len(D)):
+            results.append([])
+            for score, id in zip(D[i], I[i]):
+                doc_id = self.doc_ids[id]
+                results[i].append((float(score), doc_id))
+        
+        return results
+
 
     
 
