@@ -10,7 +10,6 @@ def fake_model():
     fake_model.encode.side_effect = [np.zeros(384), np.ones(384)]
     return fake_model
 
- 
 TEST_DOCS = [
         {"id": "a", "metadata": {"synthetic_phrase": "first"}},
         {"id": "b", "metadata": {"synthetic_phrase": "second"}},

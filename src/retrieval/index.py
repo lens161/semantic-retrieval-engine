@@ -19,8 +19,13 @@ class Index:
             raise ValueError("number of ids does not match number of vectors")
         elif vectors.ndim != 2:
             raise ValueError("vectors must be 2D nd.array of shape (n, d)")
+        elif vectors.dtype != np.dtype("float32"):
+            raise ValueError("vectors must be of dtype float32")
         self.index.add(vectors)
         self.doc_ids.extend(ids)
+
+    def get(self, i:int) -> np.ndarray:
+        return self.index.reconstruct(i)
     
     def search(self, query: np.ndarray, k: int):
         if query.ndim == 1:
