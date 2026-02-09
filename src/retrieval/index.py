@@ -42,13 +42,13 @@ class Index:
             query = query.reshape(1, -1) # turn into 2D array if input is 1D
 
         D, I = self.index.search(query, k) 
-        # D = similarity score not distance as in other indexes
+        # D = similarity score, not distance as in other indexes
 
         print(f"D: {D}")
         print(f"I: {I}")
 
         results = []
-
+        
         for i in range(len(D)):
             row = []
             for score, id in zip(D[i], I[i]):
