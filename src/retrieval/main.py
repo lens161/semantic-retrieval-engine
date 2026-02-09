@@ -1,14 +1,17 @@
-import numpy as np
 import embeddings as em
+
+import numpy as np
+
+from .config import EMBEDDING_MODEL, VECTOR_DIM, INDEX_PATH
 from index import Index
 from sentence_transformers import SentenceTransformer
 
 def main():
-    embedding_model = SentenceTransformer("all-MiniLM-L6-v2") # pretrained model
+    embedding_model = SentenceTransformer(EMBEDDING_MODEL) # pretrained model
     docs = em.load_documents()
     doc_ids, vectors = em.create_doc_embeddings(docs, embedding_model)
 
-    idx = Index(384)
+    idx = Index(VECTOR_DIM, INDEX_PATH)
 
     idx.add(doc_ids, vectors)
 

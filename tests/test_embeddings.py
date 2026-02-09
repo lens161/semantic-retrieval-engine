@@ -4,10 +4,12 @@ import numpy as np
 from retrieval import embeddings as em
 from unittest.mock import Mock
 
+from retrieval.config import VECTOR_DIM
+
 @pytest.fixture
 def fake_model():
     fake_model = Mock()
-    fake_model.encode.side_effect = [np.zeros(384), np.ones(384)]
+    fake_model.encode.side_effect = [np.zeros(VECTOR_DIM), np.ones(VECTOR_DIM)]
     return fake_model
 
 TEST_DOCS = [
@@ -41,8 +43,8 @@ def test_create_doc_embeddings_correct_shape_and_dtype(fake_model):
     assert np.all(vectors[1] == 1)
     assert vectors[0].dtype == np.dtype("float32")
     assert vectors[1].dtype == np.dtype("float32")
-    assert vectors[0].shape == (384,)
-    assert vectors[1].shape == (384,)
+    assert vectors[0].shape == (VECTOR_DIM,)
+    assert vectors[1].shape == (VECTOR_DIM,)
 
 def create_query_embeddings_correct_shape_and_dtype(fake_model):
     queries = ["one", "two"]
@@ -51,6 +53,6 @@ def create_query_embeddings_correct_shape_and_dtype(fake_model):
     assert np.all(vector_matrix[0] == 0)
     assert np.all(vector_matrix[1] == 1)
     assert vector_matrix.dtype == np.dtype("float32")
-    assert vector_matrix.shape == (2, 384)
+    assert vector_matrix.shape == (2, VECTOR_DIM)
 
     

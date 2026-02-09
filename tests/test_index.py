@@ -1,10 +1,14 @@
 import pytest
+import os
 
 import numpy as np
 
 from retrieval import embeddings as em
 from retrieval.index import Index
 from unittest.mock import Mock
+from faiss import read_index, write_index
+
+from retrieval.config import VECTOR_DIM
 
 @pytest.fixture
 def fake_model():
@@ -14,7 +18,8 @@ def fake_model():
 
 @pytest.fixture
 def index():
-    return Index(384)
+    test_path_1 = "data/testdata/test-index/test1.index"
+    return Index(VECTOR_DIM, test_path_1)
 
 TEST_DOCS = [
         {"id": "a", "metadata": {"synthetic_phrase": "first"}},
@@ -53,6 +58,12 @@ def test_search_returns_correct_results(index, fake_model):
     assert results[0][0][1] == "a"
     assert results[1][0][1] == "b"
 
+def test_index_writes_correctly():
+    test_path_2 = "data/testdata/test-index/test2.index"
+    idx = Index(VECTOR_DIM, test_path_2)
+
+    assert os.path.exists(test_path_2)
+    
 
 
 
