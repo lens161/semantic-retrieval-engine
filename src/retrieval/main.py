@@ -1,9 +1,9 @@
-import embeddings as em
+from retrieval import embeddings as em
+from retrieval.index import Index
 
 import numpy as np
 
 from .config import EMBEDDING_MODEL, VECTOR_DIM, INDEX_PATH
-from index import Index
 from sentence_transformers import SentenceTransformer
 
 def main():
