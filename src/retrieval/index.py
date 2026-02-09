@@ -39,9 +39,12 @@ class Index:
     
     def search(self, query: np.ndarray, k: int):
         if query.ndim == 1:
-            query = query.reshape(1, -1)
+            query = query.reshape(1, -1) # turn into 2D array if input is 1D
 
         D, I = self.index.search(query, k)
+
+        print(f"D: {D}")
+        print(f"I: {I}")
 
         results = [[]]
 
