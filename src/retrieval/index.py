@@ -41,18 +41,20 @@ class Index:
         if query.ndim == 1:
             query = query.reshape(1, -1) # turn into 2D array if input is 1D
 
-        D, I = self.index.search(query, k)
+        D, I = self.index.search(query, k) 
+        # D = similarity score not distance as in other indexes
 
         print(f"D: {D}")
         print(f"I: {I}")
 
-        results = [[]]
+        results = []
 
         for i in range(len(D)):
-            results.append([])
+            row = []
             for score, id in zip(D[i], I[i]):
                 doc_id = self.doc_ids[id]
-                results[i].append((float(score), doc_id))
+                row.append((float(score), doc_id))
+            results.append(row)
         
         return results
 
