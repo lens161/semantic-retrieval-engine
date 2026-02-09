@@ -4,7 +4,9 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 
-DATA_PATH = Path("data/testdata/documents.json")
+from .config import TEST_DATA_PATH
+
+DATA_PATH = Path(TEST_DATA_PATH)
 
 def load_documents():
     with DATA_PATH.open("r", encoding="utf-8") as f:

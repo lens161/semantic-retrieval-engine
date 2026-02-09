@@ -6,12 +6,20 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import numpy as np
-from faiss import IndexFlatIP
+from faiss import IndexFlatIP, write_index, read_index
+from pathlib import Path
 
 class Index:
 
-    def __init__(self, d):
-        self.index = IndexFlatIP(d)
+    def __init__(self, d:int, index_path:str, new:bool = True):
+        self.path = index_path
+        idx_path = Path(index_path)
+        if not new and idx_path.exists():
+            self.index = read_index(index_path)
+        else:
+            self.index = IndexFlatIP(d)
+            idx_path.parent.mkdir(parents=True, exist_ok=True)
+            write_index(self.index, index_path)
         self.doc_ids: list[int] = []
 
     def add(self, ids:list[int], vectors:np.ndarray) -> None:
@@ -23,6 +31,8 @@ class Index:
             raise ValueError("vectors must be of dtype float32")
         self.index.add(vectors)
         self.doc_ids.extend(ids)
+
+        write_index(self.index, self.path)
 
     def get(self, i:int) -> np.ndarray:
         return self.index.reconstruct(i)
