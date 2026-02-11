@@ -1,3 +1,11 @@
+"""
+Index class.
+
+describes a class that maintains a similarity index.
+holds fucntions for interaction with the index.
+"""
+
+
 import os
 
 os.environ["OMP_NUM_THREADS"] = "1"

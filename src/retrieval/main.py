@@ -1,5 +1,5 @@
-from retrieval import embeddings as em
-from retrieval.index import Index
+from . import embeddings as em
+from .index import Index
 
 import numpy as np
 
@@ -27,5 +27,6 @@ def main():
 
     print(np.array([np.zeros(384), np.ones(384)]))
     print(f"shape = {np.shape(np.array([np.zeros(384), np.ones(384)]))}")
+
 if __name__ == "__main__":
     main()

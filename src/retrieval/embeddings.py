@@ -1,3 +1,9 @@
+"""
+module for creating embeddings from Data.
+
+Contains helper functions for embedding data and queries.
+"""
+
 import json
 import numpy as np
 
