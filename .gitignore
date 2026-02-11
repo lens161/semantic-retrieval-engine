@@ -7,7 +7,13 @@ __pycache__/
 generate_dummies.py
 
 # test data 
-# testdata/
+data/testdata/
+data/annotations/
+data/val2017/
+data/testdata/testvolumes/
+semantic-test-dataset/
+
+notes.md
 
 # venv
 .venv
