@@ -11,8 +11,8 @@ import sqlite3
 ROOT = "data/testdata/semantic-test-dataset"
 DB = 'data/db/test.db'
 
-def crawl(folder: str) -> None:
-    conn = sqlite3.connect(DB)
+def crawl(folder: str, db: str) -> None:
+    conn = sqlite3.connect(db)
     c = conn.cursor()
 
     c.execute("""
@@ -50,7 +50,7 @@ def get(file_name: str, conn: sqlite3.Connection) -> tuple:
 
 
 if __name__ == "__main__":
-    crawl(ROOT)
+    crawl(ROOT, DB)
 
     conn = sqlite3.connect(DB)
 
