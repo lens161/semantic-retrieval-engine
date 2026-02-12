@@ -4,7 +4,7 @@ import numpy as np
 from retrieval import embeddings as em
 from unittest.mock import Mock
 
-from retrieval.config import VECTOR_DIM
+from config import VECTOR_DIM
 
 @pytest.fixture
 def fake_model():

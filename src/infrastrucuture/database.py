@@ -11,7 +11,7 @@ import sqlite3
 ROOT = "data/testdata/semantic-test-dataset"
 DB = 'data/db/test.db'
 
-def crawl(folder: str, db: str) -> None:
+def crawl_volume(root: str, db: str) -> None:
     conn = sqlite3.connect(db)
     c = conn.cursor()
 
@@ -22,7 +22,7 @@ def crawl(folder: str, db: str) -> None:
                     ) 
               """)
 
-    for dirpath, subdirs, files in os.walk(folder):
+    for dirpath, subdirs, files in os.walk(root):
         filepaths = []
         for file in files:
             fp = (file, os.path.join(dirpath, file))
@@ -48,9 +48,8 @@ def get(file_name: str, conn: sqlite3.Connection) -> tuple:
     file = c.fetchall()
     return file
 
-
 if __name__ == "__main__":
-    crawl(ROOT, DB)
+    crawl_volume(ROOT, DB)
 
     conn = sqlite3.connect(DB)
 

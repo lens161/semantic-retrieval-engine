@@ -4,11 +4,11 @@ import os
 import numpy as np
 
 from retrieval import embeddings as em
-from retrieval.index import Index
+from infrastrucuture.index import Index
 from unittest.mock import Mock
 from faiss import read_index, write_index
 
-from retrieval.config import VECTOR_DIM
+from config import VECTOR_DIM
 
 TEST_PATH_1 = "data/testdata/test-index/test1.index"
 TEST_PATH_2 = "data/testdata/test-index/test2.index"
