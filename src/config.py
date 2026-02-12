@@ -3,3 +3,6 @@ INDEX_PATH = "data/index/idx.index"
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 VECTOR_DIM = 384
+
+DB = 'data/db/test.db'
+VOLUME_ROOT = "data/testdata/semantic-test-dataset"

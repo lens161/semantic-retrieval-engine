@@ -1,5 +1,5 @@
-from .retrieval import embeddings as em
-from .infrastrucuture.index import Index
+import retrieval.embeddings as em
+from infrastrucuture.vectorindex import Index
 
 import numpy as np
 

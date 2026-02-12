@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from retrieval import embeddings as em
-from infrastrucuture.index import Index
+from infrastrucuture.vectorindex import Index
 from unittest.mock import Mock
 from faiss import read_index, write_index
 
