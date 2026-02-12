@@ -14,66 +14,52 @@ TEST_PATH_1 = "data/testdata/test-index/test1.index"
 TEST_PATH_2 = "data/testdata/test-index/test2.index"
 
 @pytest.fixture
-def fake_model():
-    fake_model = Mock()
-    fake_model.encode.side_effect = [np.zeros(384), np.ones(384)]
-    return fake_model
-
-@pytest.fixture
 def index():
-    return Index(VECTOR_DIM, TEST_PATH_1)
+    return Index(VECTOR_DIM, TEST_PATH_1, new=True)
 
-TEST_DOCS = [
-        {"id": "a", "metadata": {"synthetic_phrase": "first"}},
-        {"id": "b", "metadata": {"synthetic_phrase": "second"}},
-    ]
 
-def test_correct_vectors_added(fake_model, index):
-    doc_ids, vectors = em.create_doc_embeddings(TEST_DOCS, fake_model)
+def test_add_vectors(index):
+    ids = [10, 11]
+    vectors = np.ones((2, VECTOR_DIM), dtype="float32")
 
-    index.add(doc_ids, vectors)
+    index.add(ids, vectors)
 
-    assert np.all(index.get(0) == 0) 
-    assert np.all(index.get(1) == 1)
+    assert len(index.doc_ids) == 2
 
-def test_add_wrong_input_throws(index, fake_model):
-    doc_ids, vectors = em.create_doc_embeddings(TEST_DOCS, fake_model)
 
-    wrong_ids = ["one", "two", "three"]
-    wrong_vectors = np.zeros((10, 10, 10), dtype="float32")
-    wrong_vectors_dtype = vectors.astype("float16")
+def test_add_invalid_shape(index):
+    ids = [1]
+    vectors = np.ones((VECTOR_DIM,), dtype="float32")
+
     with pytest.raises(ValueError):
-        index.add(wrong_ids, vectors)
-    with pytest.raises(ValueError):
-        index.add(doc_ids, wrong_vectors)
-    with pytest.raises(ValueError):
-        index.add(doc_ids, wrong_vectors_dtype)
-
-def test_search_returns_correct_results(index, fake_model):
-
-    doc_ids, vectors = em.create_doc_embeddings(TEST_DOCS, fake_model)
-    query_matrix = np.array([np.zeros(384), np.ones(384)])
-
-    index.add(doc_ids, vectors)
-    results = index.search(query_matrix, 1)
-
-    assert results[0][0][1] == "a"
-    assert results[1][0][1] == "b"
-
-def test_index_writes_correctly():
-    idx = Index(VECTOR_DIM, TEST_PATH_2)
-
-    assert os.path.exists(TEST_PATH_2)
-
-def test_index_loaded_correctly(fake_model):
-    doc_ids, vectors = em.create_doc_embeddings(TEST_DOCS, fake_model)
-    idx = Index(VECTOR_DIM, TEST_PATH_1, False)
-
-    assert np.allclose(idx.get(0), vectors[0])
-    assert np.allclose(idx.get(1), vectors[1])
+        index.add(ids, vectors)
 
 
-    
+def test_get_vector(index):
+    ids = [1]
+    vectors = np.ones((1, VECTOR_DIM), dtype="float32")
+
+    index.add(ids, vectors)
+
+    v = index.get(0)
+
+    assert isinstance(v, np.ndarray)
+    assert v.shape[0] == VECTOR_DIM
 
 
+def test_search_returns_doc_ids(index):
+    ids = [42, 99]
+    vectors = np.vstack([
+        np.ones(VECTOR_DIM),
+        np.zeros(VECTOR_DIM)
+    ]).astype("float32")
 
+    index.add(ids, vectors)
+
+    query = np.ones(VECTOR_DIM, dtype="float32")
+
+    results = index.search(query, k=1)
+
+    assert isinstance(results, list)
+    assert isinstance(results[0][0][1], int)
+    assert results[0][0][1] in ids

@@ -54,11 +54,11 @@ def embed(path: str, doc_id: int, model: SentenceTransformer):
 
 def extract_docx(path: str) -> list[str]:
     doc = docx.Document(path)
-    text = [p for p in doc.paragraphs]
+    text = [p.text for p in doc.paragraphs]
     return text
 
 def extract_pdf(path: str) -> list[str]:
-    with open(path, 'r') as f:
+    with open(path, 'rb') as f:
         reader = PdfReader(f)
         pages = [p.extract_text() for p in reader.pages]
     return pages

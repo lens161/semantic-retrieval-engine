@@ -10,6 +10,7 @@ generate_dummies.py
 data/testdata/
 data/annotations/
 data/val2017/
+tests/data/semantic_test_dataset
 data/testdata/testvolumes/
 semantic-test-dataset/
 
