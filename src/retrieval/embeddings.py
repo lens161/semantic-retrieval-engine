@@ -10,7 +10,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 
-from .config import TEST_DATA_PATH
+from config import TEST_DATA_PATH
 
 DATA_PATH = Path(TEST_DATA_PATH)
 
