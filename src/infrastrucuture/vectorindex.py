@@ -1,7 +1,7 @@
 """
 Index class.
 
-describes a class that maintains a similarity index.
+describes a class that maintains a similarity index (faiss).
 holds fucntions for interaction with the index.
 """
 
