@@ -3,56 +3,50 @@ import numpy as np
 
 from retrieval import embeddings as em
 from unittest.mock import Mock
+from pathlib import Path
 
 from config import VECTOR_DIM
+
+TEST_DATA_DIR = Path("tests/data/docs")
 
 @pytest.fixture
 def fake_model():
     fake_model = Mock()
-    fake_model.encode.side_effect = [np.zeros(VECTOR_DIM), np.ones(VECTOR_DIM)]
+
+    def fake_encode(inputs, convert_to_numpy=True, normalize_embeddings=True):
+        n = len(inputs)
+        return np.ones((n, VECTOR_DIM), dtype="float32")
+
+    fake_model.encode.side_effect = fake_encode
     return fake_model
 
-TEST_DOCS = [
-        {"id": "a", "metadata": {"synthetic_phrase": "first"}},
-        {"id": "b", "metadata": {"synthetic_phrase": "second"}},
+
+@pytest.fixture
+def test_files():
+    return [
+        "tests/data/docs/0.docx",
+        "tests/data/docs/0.pdf",
+        "tests/data/docs/0.md",
+        "tests/data/docs/0.txt",
     ]
 
-def test_load_documents():
-    DATA_PATH = "data/testdata/documents.json"
 
-    docs = em.load_documents()
+@pytest.mark.parametrize("doc_id", [0, 3, 161])
+def test_embed_correct_shape_and_dtype(fake_model, test_files, doc_id):
+    for file in test_files:
+        returned_id, embeddings = em.embed(str(file), doc_id, fake_model)
 
-    assert isinstance(docs, list)
-    assert all(isinstance(d, dict) for d in docs)
-    assert docs[0].get("id") == "doc_018"
-    assert docs[2].get("id") == "doc_010"
-    assert docs[5].get("id") == "doc_006"
+        assert returned_id == doc_id
+        assert isinstance(embeddings, np.ndarray)
+        assert embeddings.shape[1] == VECTOR_DIM
+        assert embeddings.dtype == np.float32
 
-def test_create_doc_embedding_preserves_order(fake_model):
 
-    doc_ids, vectors = em.create_doc_embeddings(TEST_DOCS, fake_model)
-
-    assert doc_ids[0] == "a"
-    assert doc_ids[1] == "b"
-
-def test_create_doc_embeddings_correct_shape_and_dtype(fake_model):
-
-    doc_ids, vectors = em.create_doc_embeddings(TEST_DOCS, fake_model)
-
-    assert np.all(vectors[0] == 0)
-    assert np.all(vectors[1] == 1)
-    assert vectors[0].dtype == np.dtype("float32")
-    assert vectors[1].dtype == np.dtype("float32")
-    assert vectors[0].shape == (VECTOR_DIM,)
-    assert vectors[1].shape == (VECTOR_DIM,)
-
-def create_query_embeddings_correct_shape_and_dtype(fake_model):
+def test_create_query_embeddings_correct_shape_and_dtype(fake_model):
     queries = ["one", "two"]
-    vector_matrix = em.create_query_embeddings(queries, fake_model)
 
-    assert np.all(vector_matrix[0] == 0)
-    assert np.all(vector_matrix[1] == 1)
-    assert vector_matrix.dtype == np.dtype("float32")
-    assert vector_matrix.shape == (2, VECTOR_DIM)
+    vectors = em.create_query_embeddings(queries, fake_model)
 
-    
+    assert isinstance(vectors, np.ndarray)
+    assert vectors.shape == (2, VECTOR_DIM)
+    assert vectors.dtype == np.float32
