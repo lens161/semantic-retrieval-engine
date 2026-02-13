@@ -26,13 +26,14 @@ class DataBase:
         CREATE TABLE IF NOT EXISTS file (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             file_name TEXT NOT NULL,
+            file_type VARCHAR(8) NOT NULL,
             path TEXT UNIQUE NOT NULL
         )
         """)
         conn.execute("""
         CREATE TABLE IF NOT EXISTS chunk (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            file_id INTEGER,
+            file_id INTEGER
         )
         """)
         conn.commit()
@@ -57,18 +58,36 @@ class DataBase:
             except sqlite3.IntegrityError:
                 continue
 
-    def add(file: tuple[str, str], conn = sqlite3.Connection) -> None:
-        filename = file[0]
-        path = file[1]
-        conn.execute("""INSERT INTO file VALUES(?, ?)""", (filename, path))
+    def add(file: tuple[int, str, str, str], chunks:list[int], conn = sqlite3.Connection) -> None:
+        file_id = file[0]
+        filename = file[1]
+        file_type = file[2]
+        path = file[3]
+        conn.execute("""INSERT INTO file VALUES(?, ?, ?, ?)""", (file_id, filename, file_type, path))
+        for chunk_id in chunks:
+            conn.execute("""INSERT INTO chunk VALUES(?, ?,)""", (chunk_id, file_id))
 
-    def get(self, file_name: str) -> tuple:
+    def get_file(self, chunk_id: int) -> tuple:
         conn = sqlite3.connect(self.db)
         c = conn.cursor()
 
-        c.execute("""SELECT * FROM file WHERE file_name = ?""", (file_name, ))
+        c.execute("""SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, ))
         file = c.fetchall()
 
         conn.commit()
         conn.close()
         return file
+    
+    def get_all(self, file_ids: list[int]):
+        file_ids = set(file_ids)
+
+        conn = sqlite3.connect(self.db)
+        c = conn.cursor()
+        c.execute("""SELECT path FROM file WHERE id IN ?""", (file_ids, ))
+
+        file_paths = c.fetchall()
+
+        return file_paths
+    
+    def get_database(self):
+        return self.db
