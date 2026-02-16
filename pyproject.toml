@@ -12,3 +12,7 @@ packages = ["infrastructure", "retrieval", "pipelines"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+filterwarnings = [
+    "ignore:.*SwigPy.*:DeprecationWarning",
+    "ignore:.*swigvarlink.*:DeprecationWarning"
+]

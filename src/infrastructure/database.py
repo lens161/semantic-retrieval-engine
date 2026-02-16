@@ -45,13 +45,13 @@ class DataBase:
     def add_volume(self, embedding_model) -> None:
         conn = sqlite3.connect(self.db)
         for dirpath, subdirs, files in os.walk(self.root):
-            files = []
+            file_list= []
             chunk_embeds = []
             for file in files:
                 fp = (file, os.path.join(dirpath, file))
                 file_type, embeds = em.embed(fp, embedding_model)
                 chunk_embeds.append(embeds)
-                files.append((file, file_type, fp))
+                file_list.append((file, file_type, fp))
             
             self.add_batch(files, chunk_embeds, conn)
         conn.commit()
@@ -95,12 +95,12 @@ class DataBase:
         chunk_ids = np.array(chunk_ids)
         self.vectorindex.add(chunk_embeds, chunk_ids)
 
-    def get_file(self, chunk_id: int) -> tuple:
-        conn = sqlite3.connect(self.db)
+    def get_file(self, chunk_id: int, conn: sqlite3.Connection) -> tuple:
+        # conn = sqlite3.connect(self.db)
 
         file = conn.execute("""SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, )).fetchone()
-        conn.close()
-        return file
+        # conn.close()
+        return file[0]
     
     def get_all(self, file_ids: list[int]):
         file_ids = set(file_ids)
@@ -116,21 +116,3 @@ class DataBase:
     def get_database(self):
         return self.db
     
-if __name__ == "__main__":
-    TEST_VALUES_FILE_INPUT = [("file 1", "doc1", "data/file1"),
-                          ("file 2", "doc2", "data/file2"),
-                          ("file 3", "doc3", "data/file3")]
-
-    TEST_VALUES_FILE_IN_DB = [(1, "file 1", "doc1", "data/file1"),
-                          (2, "file 2", "doc2", "data/file2"),
-                          (3, "file 3", "doc3", "data/file3")]
-    idx = Index(10, "tests/data/idx/test.idx")
-    database = DataBase("tests/data/semantic_test_dataset", 'tests/data/db/test.db')
-
-    database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
-
-    file1 = database.get_file(2)
-    file2 = database.get_file(4)
-    file3 = database.get_file(6)
-    print(file1)
-

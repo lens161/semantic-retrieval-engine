@@ -3,8 +3,8 @@ import pytest
 import sqlite3
 import numpy as np
 
-from infrastrucuture.database import DataBase
-from infrastrucuture.vectorindex import Index
+from infrastructure.database import DataBase
+from infrastructure.vectorindex import Index
 
 TEST_VOLUME = "tests/data/semantic_test_dataset"
 TEST_DB = 'tests/data/db/test.db'
@@ -120,13 +120,13 @@ def test_add_batch(conn: sqlite3.Connection, database: DataBase):
 def test_get_file(conn: sqlite3.Connection, database: DataBase):
       database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
 
-      file1 = database.get_file(2)
-      file2 = database.get_file(4)
-      file3 = database.get_file(6)
+      file1 = database.get_file(2, conn)
+      file2 = database.get_file(4, conn)
+      file3 = database.get_file(6, conn)
       print(file1)
 
-      assert file1 == TEST_VALUES_FILE_IN_DB[0]
-      assert file2 == TEST_VALUES_FILE_IN_DB[1]
-      assert file3 == TEST_VALUES_FILE_IN_DB[2]
+      assert file1 == TEST_VALUES_FILE_IN_DB[0][0]
+      assert file2 == TEST_VALUES_FILE_IN_DB[1][0]
+      assert file3 == TEST_VALUES_FILE_IN_DB[2][0]
 
       
