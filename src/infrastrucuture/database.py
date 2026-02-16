@@ -42,51 +42,57 @@ class DataBase:
         conn.commit()
         conn.close()
 
-    def add_volume(self) -> None:
+    def add_volume(self, embedding_model) -> None:
         conn = sqlite3.connect(self.db)
         for dirpath, subdirs, files in os.walk(self.root):
-            filepaths = []
+            files = []
+            chunk_embeds = []
             for file in files:
                 fp = (file, os.path.join(dirpath, file))
-                filepaths.append(fp)
+                file_type, embeds = em.embed(fp, embedding_model)
+                chunk_embeds.append(embeds)
+                files.append((file, file_type, fp))
             
-            self.add_multiple(filepaths, conn)
+            self.add_batch(files, chunk_embeds, conn)
         conn.commit()
         conn.close()
             
-    def add_multiple(self, files: list[tuple[int, str, str, str]], conn: sqlite3.Connection):
-        for f in files:
-            path = f[3]
-            file_id = f[0]
-            chunk_embeds = em.embed(path, file_id)
+    def add_batch(self, files: list[tuple[str, str, str]],
+                  chunk_embeds: list[np.ndarray], 
+                  conn: sqlite3.Connection):
+        for i, f in enumerate(files):
             try:
-                self.add(f, conn, chunk_embeds)
+                self.add(f, chunk_embeds[i], conn)
             except sqlite3.IntegrityError:
                 continue
 
-    def add(self, file: tuple[int, str, str, str], chunk_embeds:np.ndarray, conn: sqlite3.Connection) -> None:
-        file_id = file[0]
-        filename = file[1]
-        file_type = file[2]
-        path = file[3]
-        # with conn:
-        conn.execute("""INSERT INTO file VALUES(?, ?, ?, ?)""", 
-                     (file_id, filename, file_type, path)
-                     )
+    def add(self, file: tuple[str, str, str], 
+            chunk_embeds: np.ndarray, conn: sqlite3.Connection) -> None:
+        filename = file[0]
+        file_type = file[1]
+        path = file[2]
+        print(type(conn))
+        file_id = conn.execute(
+            """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?) RETURNING id""", 
+            (filename, file_type, path)).fetchone()[0]
         rows = []
         for i in range(len(chunk_embeds)):
-            row = conn.execute("""INSERT INTO chunk (file_id) VALUES(?) RETURNING id""", 
-                         (file_id,)).fetchall()
+            row = conn.execute(
+                """INSERT INTO chunk (file_id) VALUES(?) RETURNING id""", 
+                (file_id,)
+                ).fetchall()
+            
             rows.append(row)
-        print(rows)
+
         chunk_ids = [row[0] for row in rows]
         chunk_ids = [i[0] for i in chunk_ids]
 
         self.transfer_to_vectorindex(chunk_embeds, chunk_ids)
 
+        return file_id
+
     def transfer_to_vectorindex(self, chunk_embeds:np.ndarray, chunk_ids:list):
         chunk_ids = np.array(chunk_ids)
-        print(chunk_ids)
         self.vectorindex.add(chunk_embeds, chunk_ids)
 
     def get_file(self, chunk_id: int) -> tuple:

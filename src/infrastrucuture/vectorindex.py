@@ -30,7 +30,7 @@ class Index:
             idx_path.parent.mkdir(parents=True, exist_ok=True)
             write_index(self.index, index_path)
 
-    def add(self,  vectors:np.ndarray, ids:np.ndarray) -> None:
+    def add(self, vectors:np.ndarray, ids:np.ndarray) -> None:
         if len(ids)!= vectors.shape[0]:
             raise ValueError("number of ids does not match number of vectors")
         elif vectors.ndim != 2:

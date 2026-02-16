@@ -18,7 +18,7 @@ CHUNK_SIZE = 10
 
 MODEL = SentenceTransformer(EMBEDDING_MODEL)
 
-def embed(path: str, file_id: int, model: SentenceTransformer = MODEL) -> tuple[int, np.ndarray]:
+def embed(path: str, model: SentenceTransformer = MODEL) -> tuple[int, np.ndarray]:
     filetype = str(from_file(path))
     print(filetype)
 
@@ -32,7 +32,7 @@ def embed(path: str, file_id: int, model: SentenceTransformer = MODEL) -> tuple[
     
     embeddings = model.encode(chunks, convert_to_numpy=True, normalize_embeddings=True)
 
-    return file_id, embeddings
+    return filetype, embeddings
 
 def extract_docx(path: str) -> list[str]:
     doc = docx.Document(path)

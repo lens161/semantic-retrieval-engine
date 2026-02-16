@@ -11,9 +11,14 @@ TEST_DB = 'tests/data/db/test.db'
 TEST_IDX = "tests/data/idx/test.idx"
 TEST_DIM = 10
 
-TEST_VALUES_FILE = [(1, "file 1", "doc1", "data/file1"),
-                    (2, "file 2", "doc2", "data/file2"),
-                    (3, "file 3", "doc3", "data/file3")]
+TEST_VALUES_FILE_INPUT = [("file 1", "doc1", "data/file1"),
+                          ("file 2", "doc2", "data/file2"),
+                          ("file 3", "doc3", "data/file3")]
+
+TEST_VALUES_FILE_IN_DB = [(1, "file 1", "doc1", "data/file1"),
+                          (2, "file 2", "doc2", "data/file2"),
+                          (3, "file 3", "doc3", "data/file3")]
+
 TEST_CHUNK_EMBEDS = [np.array([[1,1,1,1,1,1,1,1,1,1],
                               [1,2,2,2,2,2,2,2,2,2],
                               [1,3,3,3,3,3,3,3,3,3]], dtype="float32"),
@@ -86,9 +91,30 @@ def test_transfer_to_vectorindex(database: DataBase):
       assert np.array_equal(TEST_CHUNK_EMBEDS[2][1], database.vectorindex.get(200))
 
 def test_add(conn: sqlite3.Connection, database: DataBase):
-      for file, embeds in zip(TEST_VALUES_FILE, TEST_CHUNK_EMBEDS):
+
+      for file, embeds in zip(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS):
             database.add(file, embeds, conn)
       files = conn.execute("""SELECT * FROM file""").fetchall()
-      assert TEST_VALUES_FILE[0] in files
-      assert TEST_VALUES_FILE[1] in files
-      assert TEST_VALUES_FILE[2] in files
+      embed_ids = conn.execute("""SELECT id FROM chunk WHERE file_id=1""").fetchall()
+      embed_ids = [id[0] for id in embed_ids]
+
+      assert TEST_VALUES_FILE_IN_DB[0] in files
+      assert TEST_VALUES_FILE_IN_DB[1] in files
+      assert TEST_VALUES_FILE_IN_DB[2] in files
+
+      assert embed_ids == [1, 2, 3]
+
+def test_add_batch(conn: sqlite3.Connection, database: DataBase):
+      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
+
+      files = conn.execute("""SELECT * FROM file""").fetchall()
+      embed_ids = conn.execute("""SELECT id FROM chunk WHERE file_id=1""").fetchall()
+      embed_ids = [id[0] for id in embed_ids]
+
+      assert TEST_VALUES_FILE_IN_DB[0] in files
+      assert TEST_VALUES_FILE_IN_DB[1] in files
+      assert TEST_VALUES_FILE_IN_DB[2] in files
+
+      assert embed_ids == [1, 2, 3]
+
+      

@@ -20,7 +20,6 @@ def fake_model():
     fake_model.encode.side_effect = fake_encode
     return fake_model
 
-
 @pytest.fixture
 def test_files():
     return [
@@ -30,17 +29,13 @@ def test_files():
         "tests/data/docs/0.txt",
     ]
 
-
-@pytest.mark.parametrize("doc_id", [0, 3, 161])
-def test_embed_correct_shape_and_dtype(fake_model, test_files, doc_id):
+def test_embed_correct_shape_and_dtype(fake_model, test_files):
     for file in test_files:
-        returned_id, embeddings = em.embed(str(file), doc_id, fake_model)
+        _, embeddings = em.embed(str(file), fake_model)
 
-        assert returned_id == doc_id
         assert isinstance(embeddings, np.ndarray)
         assert embeddings.shape[1] == VECTOR_DIM
         assert embeddings.dtype == np.float32
-
 
 def test_create_query_embeddings_correct_shape_and_dtype(fake_model):
     queries = ["one", "two"]
