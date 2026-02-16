@@ -14,7 +14,7 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import numpy as np
-from faiss import IndexFlatIP, write_index, read_index
+from faiss import IndexFlatIP, IndexIDMap2, write_index, read_index
 from pathlib import Path
 
 class Index:
@@ -25,20 +25,19 @@ class Index:
         if not new and idx_path.exists():
             self.index = read_index(index_path)
         else:
-            self.index = IndexFlatIP(d)
+            base_index = IndexFlatIP(d)
+            self.index = IndexIDMap2(base_index)
             idx_path.parent.mkdir(parents=True, exist_ok=True)
             write_index(self.index, index_path)
-        self.doc_ids: list[int] = []
 
-    def add(self, ids:list[int], vectors:np.ndarray) -> None:
+    def add(self,  vectors:np.ndarray, ids:np.ndarray) -> None:
         if len(ids)!= vectors.shape[0]:
             raise ValueError("number of ids does not match number of vectors")
         elif vectors.ndim != 2:
             raise ValueError("vectors must be 2D nd.array of shape (n, d)")
         elif vectors.dtype != np.dtype("float32"):
             raise ValueError("vectors must be of dtype float32")
-        self.index.add(vectors)
-        self.doc_ids.extend(ids)
+        self.index.add_with_ids(vectors, ids)
 
         write_index(self.index, self.path)
 
@@ -55,16 +54,19 @@ class Index:
         print(f"D: {D}")
         print(f"I: {I}")
 
-        results = []
+        results = [(int(i), np.float32(d)) for i, d in zip(I[0],D[0])]
         
-        for i in range(len(D)):
-            row = []
-            for score, id in zip(D[i], I[i]):
-                doc_id = self.doc_ids[id]
-                row.append((float(score), doc_id))
-            results.append(row)
+        # for i in range(len(D)):
+        #     row = []
+        #     for score, id in zip(D[i], I[i]):
+        #         doc_id = self.doc_ids[id]
+        #         row.append((float(score), doc_id))
+        #     results.append(row)
         
         return results
+    
+    def size(self):
+        return self.index.ntotal
 
 
     

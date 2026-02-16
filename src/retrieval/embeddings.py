@@ -3,8 +3,6 @@ module for creating embeddings from Data.
 
 Contains helper functions for embedding data and queries.
 """
-
-import json
 import numpy as np
 import docx
 from pypdf import PdfReader
@@ -13,30 +11,14 @@ from sentence_transformers import SentenceTransformer
 from pathlib import Path
 from magic import from_file
 
-from config import TEST_DATA_PATH
+from config import TEST_DATA_PATH, EMBEDDING_MODEL
 
 DATA_PATH = Path(TEST_DATA_PATH)
 CHUNK_SIZE = 10
 
-# def load_documents():
-#     with DATA_PATH.open("r", encoding="utf-8") as f:
-#         return json.load(f)
-    
-# def create_doc_embeddings(documents: list[dict], model:SentenceTransformer) -> tuple[list[str], np.ndarray]:
-#     vectors = []
-#     doc_ids = []
+MODEL = SentenceTransformer(EMBEDDING_MODEL)
 
-#     for doc in documents:
-#         content = doc["metadata"]["synthetic_phrase"]
-#         id = doc["id"]
-#         v = model.encode(content, convert_to_numpy=True, normalize_embeddings=True) # shape==(384, )
-#         vectors.append(v)
-#         doc_ids.append(id)
-    
-#     vector_matrix = np.vstack(vectors).astype("float32") # shape == (len(documents), 384)
-#     return doc_ids, vector_matrix
-
-def embed(path: str, doc_id: int, model: SentenceTransformer):
+def embed(path: str, file_id: int, model: SentenceTransformer = MODEL) -> tuple[int, np.ndarray]:
     filetype = str(from_file(path))
     print(filetype)
 
@@ -50,7 +32,7 @@ def embed(path: str, doc_id: int, model: SentenceTransformer):
     
     embeddings = model.encode(chunks, convert_to_numpy=True, normalize_embeddings=True)
 
-    return doc_id, embeddings
+    return file_id, embeddings
 
 def extract_docx(path: str) -> list[str]:
     doc = docx.Document(path)
@@ -77,7 +59,7 @@ def extract_txt_md(path: str) -> list[str]:
             i += CHUNK_SIZE
     return paragraphs
 
-def create_query_embeddings(queries: list[str], model:SentenceTransformer) -> np.ndarray:
+def create_query_embeddings(queries: list[str], model:SentenceTransformer = MODEL) -> np.ndarray:
     vectors = model.encode(queries, convert_to_numpy=True, normalize_embeddings=True)
     vector_matrix = np.vstack(vectors).astype("float32")
     return vector_matrix

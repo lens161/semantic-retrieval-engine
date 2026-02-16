@@ -18,48 +18,47 @@ def index():
     return Index(VECTOR_DIM, TEST_PATH_1, new=True)
 
 
-def test_add_vectors(index):
-    ids = [10, 11]
+def test_add_vectors(index: Index):
+    ids = np.array([10, 11])
     vectors = np.ones((2, VECTOR_DIM), dtype="float32")
 
-    index.add(ids, vectors)
+    index.add(vectors, ids)
 
-    assert len(index.doc_ids) == 2
+    assert index.size() == 2
 
 
-def test_add_invalid_shape(index):
-    ids = [1]
+def test_add_invalid_shape(index: Index):
+    ids = np.array([1])
     vectors = np.ones((VECTOR_DIM,), dtype="float32")
 
     with pytest.raises(ValueError):
-        index.add(ids, vectors)
+        index.add(vectors, ids)
 
 
-def test_get_vector(index):
-    ids = [1]
+def test_get_vector(index: Index):
+    ids = np.array([1])
     vectors = np.ones((1, VECTOR_DIM), dtype="float32")
 
-    index.add(ids, vectors)
+    index.add(vectors, ids)
 
-    v = index.get(0)
+    v = index.get(1)
 
     assert isinstance(v, np.ndarray)
     assert v.shape[0] == VECTOR_DIM
 
-
-def test_search_returns_doc_ids(index):
-    ids = [42, 99]
+def test_search_returns_chunk_ids(index: Index):
+    ids = np.array([42, 99])
     vectors = np.vstack([
         np.ones(VECTOR_DIM),
         np.zeros(VECTOR_DIM)
     ]).astype("float32")
 
-    index.add(ids, vectors)
+    index.add(vectors, ids)
 
     query = np.ones(VECTOR_DIM, dtype="float32")
 
     results = index.search(query, k=1)
 
     assert isinstance(results, list)
-    assert isinstance(results[0][0][1], int)
-    assert results[0][0][1] in ids
+    assert isinstance(results[0][1], np.float32)
+    assert results[0][0] in ids

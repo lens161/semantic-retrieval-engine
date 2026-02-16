@@ -8,12 +8,15 @@ file metadata from SQLite database.
 
 import os
 import sqlite3
+import numpy as np
 
 import retrieval.embeddings as em
+from sentence_transformers import SentenceTransformer
 from .vectorindex import Index
 
 class DataBase:
-    def __init__(self, volume_root: str, db: str, vectorindex: Index):
+    def __init__(self, volume_root: str, db: str, 
+                 vectorindex: Index):
         self.root = volume_root
         self.db = db
         self.vectorindex = vectorindex
@@ -51,21 +54,40 @@ class DataBase:
         conn.commit()
         conn.close()
             
-    def add_multiple(self, files: list[tuple[str, str]], conn = sqlite3.Connection):
+    def add_multiple(self, files: list[tuple[int, str, str, str]], conn: sqlite3.Connection):
         for f in files:
+            path = f[3]
+            file_id = f[0]
+            chunk_embeds = em.embed(path, file_id)
             try:
-                self.add(f, conn)
+                self.add(f, conn, chunk_embeds)
             except sqlite3.IntegrityError:
                 continue
 
-    def add(file: tuple[int, str, str, str], chunks:list[int], conn = sqlite3.Connection) -> None:
+    def add(self, file: tuple[int, str, str, str], chunk_embeds:np.ndarray, conn: sqlite3.Connection) -> None:
         file_id = file[0]
         filename = file[1]
         file_type = file[2]
         path = file[3]
-        conn.execute("""INSERT INTO file VALUES(?, ?, ?, ?)""", (file_id, filename, file_type, path))
-        for chunk_id in chunks:
-            conn.execute("""INSERT INTO chunk VALUES(?, ?,)""", (chunk_id, file_id))
+        # with conn:
+        conn.execute("""INSERT INTO file VALUES(?, ?, ?, ?)""", 
+                     (file_id, filename, file_type, path)
+                     )
+        rows = []
+        for i in range(len(chunk_embeds)):
+            row = conn.execute("""INSERT INTO chunk (file_id) VALUES(?) RETURNING id""", 
+                         (file_id,)).fetchall()
+            rows.append(row)
+        print(rows)
+        chunk_ids = [row[0] for row in rows]
+        chunk_ids = [i[0] for i in chunk_ids]
+
+        self.transfer_to_vectorindex(chunk_embeds, chunk_ids)
+
+    def transfer_to_vectorindex(self, chunk_embeds:np.ndarray, chunk_ids:list):
+        chunk_ids = np.array(chunk_ids)
+        print(chunk_ids)
+        self.vectorindex.add(chunk_embeds, chunk_ids)
 
     def get_file(self, chunk_id: int) -> tuple:
         conn = sqlite3.connect(self.db)

@@ -1,6 +1,7 @@
 import os
 import pytest
 import sqlite3
+import numpy as np
 
 from infrastrucuture.database import DataBase
 from infrastrucuture.vectorindex import Index
@@ -8,14 +9,28 @@ from infrastrucuture.vectorindex import Index
 TEST_VOLUME = "tests/data/semantic_test_dataset"
 TEST_DB = 'tests/data/db/test.db'
 TEST_IDX = "tests/data/idx/test.idx"
-TEST_DIM = 384
+TEST_DIM = 10
+
+TEST_VALUES_FILE = [(1, "file 1", "doc1", "data/file1"),
+                    (2, "file 2", "doc2", "data/file2"),
+                    (3, "file 3", "doc3", "data/file3")]
+TEST_CHUNK_EMBEDS = [np.array([[1,1,1,1,1,1,1,1,1,1],
+                              [1,2,2,2,2,2,2,2,2,2],
+                              [1,3,3,3,3,3,3,3,3,3]], dtype="float32"),
+
+                     np.array([[2,1,1,1,1,1,1,1,1,1],
+                              [2,2,2,2,2,2,2,2,2,2]], dtype="float32"),
+
+                     np.array([[3,1,1,1,1,1,1,1,1,1],
+                              [3,2,2,2,2,2,2,2,2,2]], dtype="float32")]
 
 @pytest.fixture
 def database():
       idx = Index(TEST_DIM, TEST_IDX)
       db = DataBase(TEST_VOLUME, TEST_DB, idx)
+      yield db
 
-      return db
+      os.remove(TEST_IDX)
 
 @pytest.fixture
 def conn(database: DataBase):
@@ -57,3 +72,23 @@ def test_correct_initialisation_of_tables(conn: sqlite3.Connection):
       assert "file_id" in chunk_columns
       assert chunk_columns_types[0] == "INTEGER"
       assert chunk_columns_types[1] == "INTEGER"
+
+def test_transfer_to_vectorindex(database: DataBase):
+      database.transfer_to_vectorindex(TEST_CHUNK_EMBEDS[0], [1, 2, 3])
+      database.transfer_to_vectorindex(TEST_CHUNK_EMBEDS[1], [4, 5])
+      database.transfer_to_vectorindex(TEST_CHUNK_EMBEDS[2], [100, 200])
+      assert np.array_equal(TEST_CHUNK_EMBEDS[0][0], database.vectorindex.get(1))
+      assert np.array_equal(TEST_CHUNK_EMBEDS[0][1], database.vectorindex.get(2))
+      assert np.array_equal(TEST_CHUNK_EMBEDS[0][2], database.vectorindex.get(3))
+      assert np.array_equal(TEST_CHUNK_EMBEDS[1][0], database.vectorindex.get(4))
+      assert np.array_equal(TEST_CHUNK_EMBEDS[1][1], database.vectorindex.get(5))
+      assert np.array_equal(TEST_CHUNK_EMBEDS[2][0], database.vectorindex.get(100))
+      assert np.array_equal(TEST_CHUNK_EMBEDS[2][1], database.vectorindex.get(200))
+
+def test_add(conn: sqlite3.Connection, database: DataBase):
+      for file, embeds in zip(TEST_VALUES_FILE, TEST_CHUNK_EMBEDS):
+            database.add(file, embeds, conn)
+      files = conn.execute("""SELECT * FROM file""").fetchall()
+      assert TEST_VALUES_FILE[0] in files
+      assert TEST_VALUES_FILE[1] in files
+      assert TEST_VALUES_FILE[2] in files
