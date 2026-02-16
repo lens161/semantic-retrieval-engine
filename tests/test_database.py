@@ -117,4 +117,16 @@ def test_add_batch(conn: sqlite3.Connection, database: DataBase):
 
       assert embed_ids == [1, 2, 3]
 
+def test_get_file(conn: sqlite3.Connection, database: DataBase):
+      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
+
+      file1 = database.get_file(2)
+      file2 = database.get_file(4)
+      file3 = database.get_file(6)
+      print(file1)
+
+      assert file1 == TEST_VALUES_FILE_IN_DB[0]
+      assert file2 == TEST_VALUES_FILE_IN_DB[1]
+      assert file3 == TEST_VALUES_FILE_IN_DB[2]
+
       

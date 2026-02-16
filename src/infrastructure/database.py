@@ -59,7 +59,7 @@ class DataBase:
             
     def add_batch(self, files: list[tuple[str, str, str]],
                   chunk_embeds: list[np.ndarray], 
-                  conn: sqlite3.Connection):
+                  conn: sqlite3.Connection) -> None:
         for i, f in enumerate(files):
             try:
                 self.add(f, chunk_embeds[i], conn)
@@ -71,7 +71,6 @@ class DataBase:
         filename = file[0]
         file_type = file[1]
         path = file[2]
-        print(type(conn))
         file_id = conn.execute(
             """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?) RETURNING id""", 
             (filename, file_type, path)).fetchone()[0]
@@ -91,18 +90,15 @@ class DataBase:
 
         return file_id
 
-    def transfer_to_vectorindex(self, chunk_embeds:np.ndarray, chunk_ids:list):
+    def transfer_to_vectorindex(self, chunk_embeds:np.ndarray, 
+                                chunk_ids:list) -> None:
         chunk_ids = np.array(chunk_ids)
         self.vectorindex.add(chunk_embeds, chunk_ids)
 
     def get_file(self, chunk_id: int) -> tuple:
         conn = sqlite3.connect(self.db)
-        c = conn.cursor()
 
-        c.execute("""SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, ))
-        file = c.fetchall()
-
-        conn.commit()
+        file = conn.execute("""SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, )).fetchone()
         conn.close()
         return file
     
@@ -119,3 +115,22 @@ class DataBase:
     
     def get_database(self):
         return self.db
+    
+if __name__ == "__main__":
+    TEST_VALUES_FILE_INPUT = [("file 1", "doc1", "data/file1"),
+                          ("file 2", "doc2", "data/file2"),
+                          ("file 3", "doc3", "data/file3")]
+
+    TEST_VALUES_FILE_IN_DB = [(1, "file 1", "doc1", "data/file1"),
+                          (2, "file 2", "doc2", "data/file2"),
+                          (3, "file 3", "doc3", "data/file3")]
+    idx = Index(10, "tests/data/idx/test.idx")
+    database = DataBase("tests/data/semantic_test_dataset", 'tests/data/db/test.db')
+
+    database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
+
+    file1 = database.get_file(2)
+    file2 = database.get_file(4)
+    file3 = database.get_file(6)
+    print(file1)
+
