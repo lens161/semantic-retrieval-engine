@@ -2,6 +2,7 @@ import os
 import pytest
 import sqlite3
 import numpy as np
+from unittest.mock import Mock, patch
 
 from infrastructure.database import DataBase
 from infrastructure.vectorindex import Index
@@ -47,6 +48,17 @@ def conn(database: DataBase):
       conn.execute("""DROP TABLE IF EXISTS chunk""")
 
       conn.close()
+
+@pytest.fixture
+def fake_model():
+    fake_model = Mock()
+
+    def fake_encode(inputs, convert_to_numpy=True, normalize_embeddings=True):
+        n = len(inputs)
+        return np.ones((n, TEST_DIM), dtype="float32")
+
+    fake_model.encode.side_effect = fake_encode
+    return fake_model
 
 def test_correct_initialisation_of_tables(conn: sqlite3.Connection):
       c = conn.cursor()
@@ -143,4 +155,20 @@ def test_get_all(conn: sqlite3.Connection, database: DataBase):
 
       assert filepaths == correct_paths
       assert single_path == correct_single_path
+
+def test_add_volume(database: DataBase, conn: sqlite3.Connection, fake_model):
+
+    fake_embeds = np.ones((2, TEST_DIM), dtype="float32")
+
+    def fake_embed(fp, model):
+        return "doc", fake_embeds
+
+    with patch("retrieval.embeddings.embed", side_effect=fake_embed):
+        database.add_volume(fake_model)
+
+    files = conn.execute("SELECT * FROM file").fetchall()
+    chunks = conn.execute("SELECT * FROM chunk").fetchall()
+
+    assert len(files) > 0
+    assert len(chunks) > 0
       

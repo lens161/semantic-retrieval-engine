@@ -13,6 +13,7 @@ data/val2017/
 tests/data/semantic_test_dataset
 data/testdata/testvolumes/
 semantic-test-dataset/
+data/semantic_test_dataset
 
 notes.md
 

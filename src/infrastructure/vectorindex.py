@@ -56,13 +56,6 @@ class Index:
 
         results = [(int(i), np.float32(d)) for i, d in zip(I[0],D[0])]
         
-        # for i in range(len(D)):
-        #     row = []
-        #     for score, id in zip(D[i], I[i]):
-        #         doc_id = self.doc_ids[id]
-        #         row.append((float(score), doc_id))
-        #     results.append(row)
-        
         return results
     
     def size(self):

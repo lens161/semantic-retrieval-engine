@@ -11,7 +11,6 @@ import sqlite3
 import numpy as np
 
 import retrieval.embeddings as em
-from sentence_transformers import SentenceTransformer
 from .vectorindex import Index
 
 class DataBase:
@@ -44,16 +43,16 @@ class DataBase:
 
     def add_volume(self, embedding_model) -> None:
         conn = sqlite3.connect(self.db)
-        for dirpath, subdirs, files in os.walk(self.root):
+        for dirpath, _, files in os.walk(self.root):
             file_list= []
             chunk_embeds = []
             for file in files:
-                fp = (file, os.path.join(dirpath, file))
-                file_type, embeds = em.embed(fp, embedding_model)
+                full_path = os.path.join(dirpath, file)
+                file_type, embeds = em.embed(full_path, embedding_model)
                 chunk_embeds.append(embeds)
-                file_list.append((file, file_type, fp))
+                file_list.append((file, file_type, full_path))
             
-            self.add_batch(files, chunk_embeds, conn)
+            self.add_batch(file_list, chunk_embeds, conn)
         conn.commit()
         conn.close()
             
@@ -116,3 +115,10 @@ class DataBase:
     def get_database(self):
         return self.db
     
+    def connect(self):
+        conn = sqlite3.connect(self.db)
+        return conn
+    
+    def disconnect(self, conn: sqlite3.Connection):
+        conn.commit()
+        conn.close()

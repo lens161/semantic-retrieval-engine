@@ -17,7 +17,6 @@ TEST_PATH_2 = "data/testdata/test-index/test2.index"
 def index():
     return Index(VECTOR_DIM, TEST_PATH_1, new=True)
 
-
 def test_add_vectors(index: Index):
     ids = np.array([10, 11])
     vectors = np.ones((2, VECTOR_DIM), dtype="float32")
@@ -26,14 +25,12 @@ def test_add_vectors(index: Index):
 
     assert index.size() == 2
 
-
 def test_add_invalid_shape(index: Index):
     ids = np.array([1])
     vectors = np.ones((VECTOR_DIM,), dtype="float32")
 
     with pytest.raises(ValueError):
         index.add(vectors, ids)
-
 
 def test_get_vector(index: Index):
     ids = np.array([1])
