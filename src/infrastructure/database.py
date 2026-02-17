@@ -96,20 +96,20 @@ class DataBase:
         self.vectorindex.add(chunk_embeds, chunk_ids)
 
     def get_file(self, chunk_id: int, conn: sqlite3.Connection) -> tuple:
-        # conn = sqlite3.connect(self.db)
 
-        file = conn.execute("""SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, )).fetchone()
-        # conn.close()
+        file = conn.execute(
+            """SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, )
+            ).fetchone()
+        
         return file[0]
     
-    def get_all(self, file_ids: list[int]):
-        file_ids = set(file_ids)
-
-        conn = sqlite3.connect(self.db)
-        c = conn.cursor()
-        c.execute("""SELECT path FROM file WHERE id IN ?""", (file_ids, ))
-
-        file_paths = c.fetchall()
+    def get_all(self, file_ids: list[int], conn: sqlite3.Connection):
+        file_ids = list(set(file_ids))
+        id_string = ",".join("?" * len(file_ids))
+        file_paths = conn.execute(
+                f"SELECT path FROM file WHERE id IN ({id_string})", 
+                file_ids,
+            ).fetchall()
 
         return file_paths
     

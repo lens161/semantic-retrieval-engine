@@ -129,4 +129,18 @@ def test_get_file(conn: sqlite3.Connection, database: DataBase):
       assert file2 == TEST_VALUES_FILE_IN_DB[1][0]
       assert file3 == TEST_VALUES_FILE_IN_DB[2][0]
 
+def test_get_all(conn: sqlite3.Connection, database: DataBase):
+      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
+      file_ids = [2, 3]
+      single_id = [1]
+      correct_paths = [TEST_VALUES_FILE_IN_DB[1][3], TEST_VALUES_FILE_IN_DB[2][3]]
+      correct_single_path = [TEST_VALUES_FILE_IN_DB[0][3]]
+
+      filepaths = database.get_all(file_ids, conn)
+      single_path = database.get_all(single_id, conn)
+      filepaths = [path[0] for path in filepaths]
+      single_path = [single_path[0][0]]
+
+      assert filepaths == correct_paths
+      assert single_path == correct_single_path
       
