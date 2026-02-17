@@ -49,17 +49,6 @@ def conn(database: DataBase):
 
       conn.close()
 
-@pytest.fixture
-def fake_model():
-    fake_model = Mock()
-
-    def fake_encode(inputs, convert_to_numpy=True, normalize_embeddings=True):
-        n = len(inputs)
-        return np.ones((n, TEST_DIM), dtype="float32")
-
-    fake_model.encode.side_effect = fake_encode
-    return fake_model
-
 def test_correct_initialisation_of_tables(conn: sqlite3.Connection):
       c = conn.cursor()
       c.execute("""SELECT name FROM sqlite_master WHERE type='table'
@@ -156,12 +145,13 @@ def test_get_all(conn: sqlite3.Connection, database: DataBase):
       assert filepaths == correct_paths
       assert single_path == correct_single_path
 
-def test_add_volume(database: DataBase, conn: sqlite3.Connection, fake_model):
-
-    fake_embeds = np.ones((2, TEST_DIM), dtype="float32")
+def test_add_volume(database: DataBase, conn: sqlite3.Connection):
+    
+    fake_model = Mock()
 
     def fake_embed(fp, model):
-        return "doc", fake_embeds
+      fake_embeds = np.ones((2, TEST_DIM), dtype="float32")
+      return "doc", fake_embeds
 
     with patch("retrieval.embeddings.embed", side_effect=fake_embed):
         database.add_volume(fake_model)
