@@ -1,11 +1,12 @@
 import pytest
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 from retrieval import embeddings as em
 from unittest.mock import Mock
 from pathlib import Path
 
-from config import VECTOR_DIM
+from config import VECTOR_DIM, EMBEDDING_MODEL
 
 TEST_DATA_DIR = Path("tests/data/docs")
 
@@ -32,6 +33,14 @@ def test_files():
 def test_embed_correct_shape_and_dtype(fake_model, test_files):
     for file in test_files:
         _, embeddings = em.embed(str(file), fake_model)
+
+        assert isinstance(embeddings, np.ndarray)
+        assert embeddings.shape[1] == VECTOR_DIM
+        assert embeddings.dtype == np.float32
+
+def test_embed_with_real_model_shape_and_dtype(test_files):
+    for file in test_files:
+        _, embeddings = em.embed(str(file))
 
         assert isinstance(embeddings, np.ndarray)
         assert embeddings.shape[1] == VECTOR_DIM

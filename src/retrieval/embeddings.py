@@ -20,7 +20,6 @@ MODEL = SentenceTransformer(EMBEDDING_MODEL)
 
 def embed(path: str, model: SentenceTransformer = MODEL) -> tuple[int, np.ndarray]:
     filetype = str(from_file(path))
-    print(filetype)
 
     chunks = []
     if filetype.__contains__("Word"):
@@ -31,6 +30,8 @@ def embed(path: str, model: SentenceTransformer = MODEL) -> tuple[int, np.ndarra
         chunks = extract_txt_md(path)
     
     embeddings = model.encode(chunks, convert_to_numpy=True, normalize_embeddings=True)
+
+    print(f"embeddings: {embeddings}")
 
     return filetype, embeddings
 

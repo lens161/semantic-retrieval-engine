@@ -41,14 +41,17 @@ class DataBase:
         conn.commit()
         conn.close()
 
-    def add_volume(self, embedding_model) -> None:
+    def add_volume(self, embedding_model = None) -> None:
         conn = sqlite3.connect(self.db)
         for dirpath, _, files in os.walk(self.root):
             file_list= []
             chunk_embeds = []
             for file in files:
                 full_path = os.path.join(dirpath, file)
-                file_type, embeds = em.embed(full_path, embedding_model)
+                if not embedding_model:
+                    file_type, embeds = em.embed(full_path)
+                else:
+                    file_type, embeds = em.embed(full_path, embedding_model)
                 chunk_embeds.append(embeds)
                 file_list.append((file, file_type, full_path))
             
@@ -84,6 +87,7 @@ class DataBase:
 
         chunk_ids = [row[0] for row in rows]
         chunk_ids = [i[0] for i in chunk_ids]
+
 
         self.transfer_to_vectorindex(chunk_embeds, chunk_ids)
 

@@ -147,18 +147,20 @@ def test_get_all(conn: sqlite3.Connection, database: DataBase):
 
 def test_add_volume(database: DataBase, conn: sqlite3.Connection):
     
-    fake_model = Mock()
+      # fake_model = Mock()
 
-    def fake_embed(fp, model):
-      fake_embeds = np.ones((2, TEST_DIM), dtype="float32")
-      return "doc", fake_embeds
+      # def fake_embed(fp, model):
+      #   fake_embeds = np.ones((2, TEST_DIM), dtype="float32")
+      #   return "doc", fake_embeds
 
-    with patch("retrieval.embeddings.embed", side_effect=fake_embed):
-        database.add_volume(fake_model)
+      # with patch("retrieval.embeddings.embed", side_effect=fake_embed):
+      #     database.add_volume(fake_model)
 
-    files = conn.execute("SELECT * FROM file").fetchall()
-    chunks = conn.execute("SELECT * FROM chunk").fetchall()
+      database.add_volume()
 
-    assert len(files) > 0
-    assert len(chunks) > 0
+      files = conn.execute("SELECT * FROM file").fetchall()
+      chunks = conn.execute("SELECT * FROM chunk").fetchall()
+
+      assert len(files) > 0
+      assert len(chunks) > 0
       
