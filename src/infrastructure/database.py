@@ -43,7 +43,7 @@ class DataBase:
         conn.close()
 
     def add_volume(self, conn: sqlite3.Connection, embedding_model = None,) -> None:
-        self.connect()
+        cursor = conn.cursor()
         for dirpath, _, files in os.walk(self.root):
             file_list = []
             chunk_embeds = []
@@ -56,38 +56,37 @@ class DataBase:
                 chunk_embeds.append(embeds)
                 file_list.append((file, file_type, full_path))
             
-            self.add_batch(file_list, chunk_embeds, conn)
+            self.add_batch(file_list, chunk_embeds, cursor)
+        cursor.close()
             
     def add_batch(self, files: list[tuple[str, str, str]],
                   chunk_embeds: list[np.ndarray], 
-                  conn: sqlite3.Connection) -> None:
+                  cursor: sqlite3.Cursor) -> None:
         for i, f in enumerate(files):
             try:
-                self.add(f, chunk_embeds[i], conn)
+                self.add(f, chunk_embeds[i], cursor)
             except sqlite3.IntegrityError:
                 continue
 
     def add(self, file: tuple[str, str, str], 
-            chunk_embeds: np.ndarray, conn: sqlite3.Connection) -> None:
+            chunk_embeds: np.ndarray, cursor: sqlite3.Cursor) -> None:
         
         filename, file_type, path = file
 
-        c = conn.cursor()
         n = len(chunk_embeds)
 
-        c.execute(
+        cursor.execute(
             """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?)""", 
             (filename, file_type, path))
-        file_id = c.lastrowid
+        file_id = cursor.lastrowid
         file_ids = [(file_id, )] * n
         chunk_ids = []
-        c.executemany(
+        cursor.executemany(
             """INSERT INTO chunk (file_id) VALUES(?)""", 
             file_ids)
-        last_id = c.lastrowid
+        last_id = cursor.lastrowid
         first_id = last_id - n + 1
         chunk_ids = list(range(first_id, last_id + 1))
-        c.close()
 
         self.transfer_to_vectorindex(chunk_embeds, chunk_ids)
 

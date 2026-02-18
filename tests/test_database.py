@@ -92,9 +92,9 @@ def test_transfer_to_vectorindex(database: DataBase):
       assert np.array_equal(TEST_CHUNK_EMBEDS[2][1], database.vectorindex.get(200))
 
 def test_add(conn: sqlite3.Connection, database: DataBase):
-
+      c = conn.cursor()
       for file, embeds in zip(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS):
-            database.add(file, embeds, conn)
+            database.add(file, embeds, c)
       files = conn.execute("""SELECT * FROM file""").fetchall()
       embed_ids = conn.execute("""SELECT id FROM chunk WHERE file_id=1""").fetchall()
       embed_ids = [id[0] for id in embed_ids]
@@ -106,7 +106,8 @@ def test_add(conn: sqlite3.Connection, database: DataBase):
       assert embed_ids == [1, 2, 3]
 
 def test_add_batch(conn: sqlite3.Connection, database: DataBase):
-      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
+      c = conn.cursor()
+      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, c)
 
       files = conn.execute("""SELECT * FROM file""").fetchall()
       embed_ids = conn.execute("""SELECT id FROM chunk WHERE file_id=1""").fetchall()
@@ -119,7 +120,8 @@ def test_add_batch(conn: sqlite3.Connection, database: DataBase):
       assert embed_ids == [1, 2, 3]
 
 def test_get_file(conn: sqlite3.Connection, database: DataBase):
-      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
+      c = conn.cursor()
+      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, c)
 
       file1 = database.get_file(2, conn)
       file2 = database.get_file(4, conn)
@@ -131,7 +133,8 @@ def test_get_file(conn: sqlite3.Connection, database: DataBase):
       assert file3 == TEST_VALUES_FILE_IN_DB[2][0]
 
 def test_get_all(conn: sqlite3.Connection, database: DataBase):
-      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, conn)
+      c = conn.cursor()
+      database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, c)
       file_ids = [2, 3]
       single_id = [1]
       correct_paths = [TEST_VALUES_FILE_IN_DB[1][3], TEST_VALUES_FILE_IN_DB[2][3]]
