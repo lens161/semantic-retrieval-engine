@@ -145,22 +145,20 @@ def test_get_all(conn: sqlite3.Connection, database: DataBase):
       assert filepaths == correct_paths
       assert single_path == correct_single_path
 
-def test_add_volume(database: DataBase, conn: sqlite3.Connection):
+def test_add_volume():
     
-      # fake_model = Mock()
+      idx = Index(512, TEST_IDX)
+      database = DataBase(TEST_VOLUME, TEST_DB, idx)
 
-      # def fake_embed(fp, model):
-      #   fake_embeds = np.ones((2, TEST_DIM), dtype="float32")
-      #   return "doc", fake_embeds
+      conn = sqlite3.connect(database.get_database())
 
-      # with patch("retrieval.embeddings.embed", side_effect=fake_embed):
-      #     database.add_volume(fake_model)
-
-      database.add_volume()
-
+      database.add_volume(conn)
       files = conn.execute("SELECT * FROM file").fetchall()
       chunks = conn.execute("SELECT * FROM chunk").fetchall()
 
+      conn.execute("""DROP TABLE IF EXISTS file""")
+      conn.execute("""DROP TABLE IF EXISTS chunk""")
+      conn.close()
+
       assert len(files) > 0
       assert len(chunks) > 0
-      

@@ -32,6 +32,7 @@ class DataBase:
             path TEXT UNIQUE NOT NULL
         )
         """)
+        conn.commit()
         conn.execute("""
         CREATE TABLE IF NOT EXISTS chunk (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,10 +42,10 @@ class DataBase:
         conn.commit()
         conn.close()
 
-    def add_volume(self, embedding_model = None) -> None:
-        conn = sqlite3.connect(self.db)
+    def add_volume(self, conn: sqlite3.Connection, embedding_model = None,) -> None:
+        self.connect()
         for dirpath, _, files in os.walk(self.root):
-            file_list= []
+            file_list = []
             chunk_embeds = []
             for file in files:
                 full_path = os.path.join(dirpath, file)
@@ -56,8 +57,6 @@ class DataBase:
                 file_list.append((file, file_type, full_path))
             
             self.add_batch(file_list, chunk_embeds, conn)
-        conn.commit()
-        conn.close()
             
     def add_batch(self, files: list[tuple[str, str, str]],
                   chunk_embeds: list[np.ndarray], 
@@ -70,24 +69,25 @@ class DataBase:
 
     def add(self, file: tuple[str, str, str], 
             chunk_embeds: np.ndarray, conn: sqlite3.Connection) -> None:
-        filename = file[0]
-        file_type = file[1]
-        path = file[2]
-        file_id = conn.execute(
-            """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?) RETURNING id""", 
-            (filename, file_type, path)).fetchone()[0]
-        rows = []
-        for i in range(len(chunk_embeds)):
-            row = conn.execute(
-                """INSERT INTO chunk (file_id) VALUES(?) RETURNING id""", 
-                (file_id,)
-                ).fetchall()
-            
-            rows.append(row)
+        
+        filename, file_type, path = file
 
-        chunk_ids = [row[0] for row in rows]
-        chunk_ids = [i[0] for i in chunk_ids]
+        c = conn.cursor()
+        n = len(chunk_embeds)
 
+        c.execute(
+            """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?)""", 
+            (filename, file_type, path))
+        file_id = c.lastrowid
+        file_ids = [(file_id, )] * n
+        chunk_ids = []
+        c.executemany(
+            """INSERT INTO chunk (file_id) VALUES(?)""", 
+            file_ids)
+        last_id = c.lastrowid
+        first_id = last_id - n + 1
+        chunk_ids = list(range(first_id, last_id + 1))
+        c.close()
 
         self.transfer_to_vectorindex(chunk_embeds, chunk_ids)
 

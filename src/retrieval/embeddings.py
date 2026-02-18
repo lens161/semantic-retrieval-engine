@@ -6,6 +6,7 @@ Contains helper functions for embedding data and queries.
 import numpy as np
 import docx
 from pypdf import PdfReader
+from PIL import Image
 
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
@@ -28,10 +29,10 @@ def embed(path: str, model: SentenceTransformer = MODEL) -> tuple[int, np.ndarra
         chunks = extract_pdf(path)
     elif filetype.__contains__("ASCII"):
         chunks = extract_txt_md(path)
+    elif filetype.__contains__("JPEG") or filetype.__contains__("PNG"):
+        chunks = [Image.open(path)]
     
     embeddings = model.encode(chunks, convert_to_numpy=True, normalize_embeddings=True)
-
-    print(f"embeddings: {embeddings}")
 
     return filetype, embeddings
 

@@ -11,6 +11,7 @@ data/testdata/
 data/annotations/
 data/val2017/
 tests/data/semantic_test_dataset
+tests/data/ground_truth.json
 data/testdata/testvolumes/
 semantic-test-dataset/
 data/semantic_test_dataset

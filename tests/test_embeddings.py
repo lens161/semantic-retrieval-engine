@@ -28,6 +28,10 @@ def test_files():
         "tests/data/docs/0.pdf",
         "tests/data/docs/0.md",
         "tests/data/docs/0.txt",
+        "tests/data/docs/000000005477.jpg",
+        "tests/data/docs/000000052412.jpg",
+        "tests/data/docs/000000052412.png",
+        "tests/data/docs/000000096549.png"
     ]
 
 def test_embed_correct_shape_and_dtype(fake_model, test_files):
