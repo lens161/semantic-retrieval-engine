@@ -6,8 +6,8 @@ from infrastructure.vectorindex import Index
 
 from config import VECTOR_DIM
 
-TEST_PATH_1 = "data/testdata/test-index/test1.index"
-TEST_PATH_2 = "data/testdata/test-index/test2.index"
+TEST_PATH_1 = "tests/data/test-index/test1.index"
+TEST_PATH_2 = "tests/data/test-index/test2.index"
 
 @pytest.fixture
 def index():
