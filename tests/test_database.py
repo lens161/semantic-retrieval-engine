@@ -2,7 +2,6 @@ import os
 import pytest
 import sqlite3
 import numpy as np
-from unittest.mock import Mock, patch
 
 from infrastructure.database import DataBase
 from infrastructure.vectorindex import Index

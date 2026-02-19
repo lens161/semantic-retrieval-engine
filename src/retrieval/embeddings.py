@@ -9,13 +9,9 @@ from pypdf import PdfReader
 from PIL import Image
 
 from sentence_transformers import SentenceTransformer
-from pathlib import Path
 from magic import from_file
 
-from config import TEST_DATA_PATH, EMBEDDING_MODEL
-
-DATA_PATH = Path(TEST_DATA_PATH)
-CHUNK_SIZE = 10
+from config import EMBEDDING_MODEL, CHUNK_SIZE
 
 MODEL = SentenceTransformer(EMBEDDING_MODEL)
 

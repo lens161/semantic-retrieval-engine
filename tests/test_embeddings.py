@@ -1,14 +1,10 @@
 import pytest
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from retrieval import embeddings as em
 from unittest.mock import Mock
-from pathlib import Path
 
-from config import VECTOR_DIM, EMBEDDING_MODEL
-
-TEST_DATA_DIR = Path("tests/data/docs")
+from config import VECTOR_DIM
 
 @pytest.fixture
 def fake_model():

@@ -1,12 +1,8 @@
 import pytest
-import os
 
 import numpy as np
 
-from retrieval import embeddings as em
 from infrastructure.vectorindex import Index
-from unittest.mock import Mock
-from faiss import read_index, write_index
 
 from config import VECTOR_DIM
 
