@@ -41,7 +41,7 @@ def database():
 @pytest.fixture
 def conn(database: DataBase):
       conn = sqlite3.connect(database.get_database())
-      yield conn # tests are run with this state of the connected database
+      yield conn # tests are run with this state of the database
 
       # runs after tests to clean up:
       conn.execute("""DROP TABLE IF EXISTS file""")
@@ -135,15 +135,14 @@ def test_get_file(conn: sqlite3.Connection, database: DataBase):
 def test_get_all(conn: sqlite3.Connection, database: DataBase):
       c = conn.cursor()
       database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, c)
-      file_ids = [2, 3]
+      chunk_ids = [4, 5, 7]
       single_id = [1]
       correct_paths = [TEST_VALUES_FILE_IN_DB[1][3], TEST_VALUES_FILE_IN_DB[2][3]]
-      correct_single_path = [TEST_VALUES_FILE_IN_DB[0][3]]
+      correct_single_path = TEST_VALUES_FILE_IN_DB[0][3]
 
-      filepaths = database.get_all(file_ids, conn)
-      single_path = database.get_all(single_id, conn)
-      filepaths = [path[0] for path in filepaths]
-      single_path = [single_path[0][0]]
+      filepaths = database.get_all_files(chunk_ids, conn)
+      single_path = database.get_all_files(single_id, conn)
+      single_path = single_path[0]
 
       assert filepaths == correct_paths
       assert single_path == correct_single_path
@@ -159,9 +158,12 @@ def test_add_volume():
       files = conn.execute("SELECT * FROM file").fetchall()
       chunks = conn.execute("SELECT * FROM chunk").fetchall()
 
+      search_result = database.get_file(1, conn)
+
       conn.execute("""DROP TABLE IF EXISTS file""")
       conn.execute("""DROP TABLE IF EXISTS chunk""")
       conn.close()
 
       assert len(files) > 0
       assert len(chunks) > 0
+      assert search_result != None

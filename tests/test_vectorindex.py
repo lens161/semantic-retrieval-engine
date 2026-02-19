@@ -51,11 +51,13 @@ def test_search_returns_chunk_ids(index: Index):
     ]).astype("float32")
 
     index.add(vectors, ids)
+    print(vectors)
 
     query = np.ones(VECTOR_DIM, dtype="float32")
 
     results = index.search(query, k=1)
+    print(results)
 
     assert isinstance(results, list)
-    assert isinstance(results[0][1], np.float32)
-    assert results[0][0] in ids
+    assert isinstance(results[0][0][1], np.float32)
+    assert results[0][0][0] in ids

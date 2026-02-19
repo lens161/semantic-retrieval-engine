@@ -42,7 +42,7 @@ class DataBase:
         conn.commit()
         conn.close()
 
-    def add_volume(self, conn: sqlite3.Connection, embedding_model = None,) -> None:
+    def add_volume(self, conn: sqlite3.Connection, embedding_model = None) -> None:
         cursor = conn.cursor()
         for dirpath, _, files in os.walk(self.root):
             file_list = []
@@ -55,7 +55,6 @@ class DataBase:
                     file_type, embeds = em.embed(full_path, embedding_model)
                 chunk_embeds.append(embeds)
                 file_list.append((file, file_type, full_path))
-            
             self.add_batch(file_list, chunk_embeds, cursor)
         cursor.close()
             
@@ -79,7 +78,7 @@ class DataBase:
             """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?)""", 
             (filename, file_type, path))
         file_id = cursor.lastrowid
-        file_ids = [(file_id, )] * n
+        file_ids = [(file_id, )] * n # n times the same file id...
         chunk_ids = []
         cursor.executemany(
             """INSERT INTO chunk (file_id) VALUES(?)""", 
@@ -98,14 +97,16 @@ class DataBase:
         self.vectorindex.add(chunk_embeds, chunk_ids)
 
     def get_file(self, chunk_id: int, conn: sqlite3.Connection) -> tuple:
-
         file = conn.execute(
             """SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, )
             ).fetchone()
         
         return file[0]
     
-    def get_all(self, file_ids: list[int], conn: sqlite3.Connection):
+    def get_all_files(self, chunk_ids: list[int], conn: sqlite3.Connection):
+        file_ids = []
+        for id in chunk_ids:
+            file_ids.append(self.get_file(id, conn))
         file_ids = list(set(file_ids))
         id_string = ",".join("?" * len(file_ids))
         file_paths = conn.execute(
@@ -113,7 +114,7 @@ class DataBase:
                 file_ids,
             ).fetchall()
 
-        return file_paths
+        return [fp[0] for fp in file_paths]
     
     def get_database(self):
         return self.db

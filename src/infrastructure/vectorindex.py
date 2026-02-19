@@ -5,7 +5,6 @@ describes a class that maintains a similarity index (faiss).
 holds fucntions for interaction with the index.
 """
 
-
 import os
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -54,15 +53,11 @@ class Index:
         print(f"D: {D}")
         print(f"I: {I}")
 
-        results = [(int(i), np.float32(d)) for i, d in zip(I[0],D[0])]
+        results = [[(int(i), np.float32(d)) 
+                    for i, d in zip(I[x],D[x])] 
+                    for x in range(len(D))] 
         
         return results
     
     def size(self):
         return self.index.ntotal
-
-
-    
-
-
-
