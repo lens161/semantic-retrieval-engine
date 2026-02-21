@@ -1,7 +1,7 @@
 """
-module for creating embeddings from Data.
+Embeddings module for creating embeddings from files.
 
-Contains helper functions for embedding data and queries.
+Contains helper functions for reading, chunking and embedding data and queries.
 """
 import numpy as np
 import os
