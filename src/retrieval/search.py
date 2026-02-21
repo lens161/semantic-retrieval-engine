@@ -1,14 +1,16 @@
 """
 Search Engine
 
-receives a query and returns files that semantically match the query
+receives a query / List of queries and returns files that semantically match the query
 """
 from infrastructure.database import DataBase
 from retrieval.embeddings import create_query_embeddings
 
 from sqlite3 import Connection
 
-def search(database: DataBase, query: str | list[str], conn: Connection) -> list[str]:
+def search(database: DataBase,
+           query: str | list[str],
+           conn: Connection) -> list[str]:
 
     if isinstance(query, str):
         queries = [query]
@@ -26,10 +28,3 @@ def search(database: DataBase, query: str | list[str], conn: Connection) -> list
     files = [database.get_all_files(per_query_ids, conn)
              for per_query_ids in chunk_ids]
     return files
-
-
-
-
-
-
-

@@ -42,7 +42,8 @@ class DataBase:
         conn.commit()
         conn.close()
 
-    def add_volume(self, conn: sqlite3.Connection, embedding_model = None) -> None:
+    def add_volume(self, conn: sqlite3.Connection, 
+                   embedding_model = None) -> None:
         cursor = conn.cursor()
         for dirpath, _, files in os.walk(self.root):
             file_list = []
@@ -68,7 +69,8 @@ class DataBase:
                 continue
 
     def add(self, file: tuple[str, str, str], 
-            chunk_embeds: np.ndarray, cursor: sqlite3.Cursor) -> None:
+            chunk_embeds: np.ndarray, 
+            cursor: sqlite3.Cursor) -> None:
         
         filename, file_type, path = file
 
@@ -93,6 +95,7 @@ class DataBase:
 
     def transfer_to_vectorindex(self, chunk_embeds:np.ndarray, 
                                 chunk_ids:list) -> None:
+        
         chunk_ids = np.array(chunk_ids)
         self.vectorindex.add(chunk_embeds, chunk_ids)
 
@@ -103,7 +106,8 @@ class DataBase:
         
         return file[0]
     
-    def get_all_files(self, chunk_ids: list[int], conn: sqlite3.Connection):
+    def get_all_files(self, chunk_ids: list[int], 
+                      conn: sqlite3.Connection):
         file_ids = []
         for id in chunk_ids:
             file_ids.append(self.get_file(id, conn))

@@ -157,7 +157,6 @@ def save_text_variants(folder: Path, category: str, texts):
         doc.add_paragraph(text)
         doc.save(folder / f"{category}_{idx}.docx")
 
-
 # ============================================================
 # Main builder
 # ============================================================

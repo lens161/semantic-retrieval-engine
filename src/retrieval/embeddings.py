@@ -4,18 +4,27 @@ module for creating embeddings from Data.
 Contains helper functions for embedding data and queries.
 """
 import numpy as np
+import os
 import docx
+from pathlib import Path
 from pypdf import PdfReader
 from PIL import Image
 
 from sentence_transformers import SentenceTransformer
 from magic import from_file
 
-from config import EMBEDDING_MODEL, CHUNK_SIZE
+from config import EMBEDDING_MODEL, MODEL_PATH, CHUNK_SIZE
 
-MODEL = SentenceTransformer(EMBEDDING_MODEL)
+if not os.path.exists(MODEL_PATH):
+    path = Path(MODEL_PATH)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    MODEL = SentenceTransformer(EMBEDDING_MODEL)
+    MODEL.save(MODEL_PATH)
+else:
+    MODEL = SentenceTransformer(MODEL_PATH)
 
-def embed(path: str, model: SentenceTransformer = MODEL) -> tuple[int, np.ndarray]:
+def embed(path: str, 
+          model: SentenceTransformer = MODEL) -> tuple[int, np.ndarray]:
     filetype = str(from_file(path))
 
     chunks = []
@@ -57,23 +66,8 @@ def extract_txt_md(path: str) -> list[str]:
             i += CHUNK_SIZE
     return paragraphs
 
-def create_query_embeddings(queries: list[str], model:SentenceTransformer = MODEL) -> np.ndarray:
+def create_query_embeddings(queries: list[str], 
+                            model:SentenceTransformer = MODEL) -> np.ndarray:
     vectors = model.encode(queries, convert_to_numpy=True, normalize_embeddings=True)
     vector_matrix = np.vstack(vectors).astype("float32")
     return vector_matrix
-
-def main() -> None:
-    doc = "data/testdata/semantic_test_dataset/airplanes/texts/airplanes_0.docx"
-    pdf = "data/testdata/semantic_test_dataset/airplanes/texts/airplanes_0.pdf"
-    md = "data/testdata/semantic_test_dataset/airplanes/texts/airplanes_0.md"
-    txt = "data/testdata/semantic_test_dataset/airplanes/texts/airplanes_0.txt"
-
-    embed(doc)
-    embed(pdf)
-    embed(md)
-    embed(txt)
-
-if __name__ =="__main__":
-
-    main()
-

@@ -43,7 +43,8 @@ class Index:
     def get(self, i:int) -> np.ndarray:
         return self.index.reconstruct(i)
     
-    def search(self, query: np.ndarray, k: int):
+    def search(self, query: np.ndarray, 
+               k: int) -> list[list[(int, np.float32)]]:
         if query.ndim == 1:
             query = query.reshape(1, -1) # turn into 2D array if input is 1D
 

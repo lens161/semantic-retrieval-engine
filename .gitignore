@@ -12,9 +12,13 @@ data/annotations/
 data/val2017/
 tests/data/semantic_test_dataset
 tests/data/ground_truth.json
+tests/data/db/test.db
 data/testdata/testvolumes/
 semantic-test-dataset/
 data/semantic_test_dataset
+
+# sentence-transformer model
+embedding_model/
 
 notes.md
 
