@@ -36,7 +36,9 @@ class DataBase:
         conn.execute("""
         CREATE TABLE IF NOT EXISTS chunk (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            file_id INTEGER
+            file_id INTEGER NOT NULL,
+            FOREIGN KEY (file_id)
+                REFERENCES file(id)
         )
         """)
         conn.commit()
