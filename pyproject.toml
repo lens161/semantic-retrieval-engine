@@ -25,6 +25,7 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+#suppress weird deprecation warnings from using embedding model
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 filterwarnings = [

@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from retrieval import embeddings as em
+from processing import embeddings as em
 from unittest.mock import Mock
 
 from config import VECTOR_DIM

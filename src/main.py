@@ -1,4 +1,4 @@
-import retrieval.embeddings as em
+import processing.embeddings as em
 from infrastructure.vectorindex import Index
 
 import numpy as np

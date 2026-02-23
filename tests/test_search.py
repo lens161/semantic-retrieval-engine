@@ -4,7 +4,7 @@ import sqlite3
 
 from infrastructure.database import DataBase
 from infrastructure.vectorindex import Index
-from retrieval import search
+from retrieval.search import search
 
 from config import VECTOR_DIM
 
@@ -31,24 +31,26 @@ def conn(database: DataBase):
 
       conn.close()
 
-def test_search_batch(database: DataBase, conn: sqlite3.Connection):
-    queries = ["airplane", "canine", "street"]
+def test_query_batch(database: DataBase, conn: sqlite3.Connection):
+    queries = ["airplane", "dog", "car"]
     database.add_volume(conn)
 
-    files = search.search(database, queries, conn)
+    files = search(database, queries, conn)
+    for f in files:
+      print(f)
+      print("\n")
 
     assert files != None
     assert files[0][0].__contains__("airplane")
-    # animal and car images are mixed. so any first result containing an animal or car is fine
-    assert files[1][0].__contains__("animal") or files[1][0].__contains__("car")
-    assert files[2][0].__contains__("car") or files[2][0].__contains__("animal")
+    assert files[1][0].__contains__("animal") 
+    assert files[2][0].__contains__("car")
 
 def test_single(database: DataBase, conn: sqlite3.Connection):
     query = "airplanes"
     print(type(query))
     database.add_volume(conn)
 
-    files = search.search(database, query, conn)
+    files = search(database, query, conn)
 
     assert files != None 
     assert files[0][0].__contains__("airplane")

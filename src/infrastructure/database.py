@@ -10,7 +10,7 @@ import os
 import sqlite3
 import numpy as np
 
-import retrieval.embeddings as em
+import processing.embeddings as em
 from .vectorindex import Index
 
 class DataBase:
@@ -82,14 +82,15 @@ class DataBase:
             """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?)""", 
             (filename, file_type, path))
         file_id = cursor.lastrowid
-        file_ids = [(file_id, )] * n # n times the same file id...
         chunk_ids = []
-        cursor.executemany(
-            """INSERT INTO chunk (file_id) VALUES(?)""", 
-            file_ids)
-        last_id = cursor.lastrowid
-        first_id = last_id - n + 1
-        chunk_ids = list(range(first_id, last_id + 1))
+        chunk_ids = []
+        for _ in range(n):
+            cursor.execute(
+                "INSERT INTO chunk (file_id) VALUES(?) RETURNING id",
+                (file_id,)
+            )
+            chunk_id = cursor.fetchone()[0]
+            chunk_ids.append(chunk_id)
 
         self.transfer_to_vectorindex(chunk_embeds, chunk_ids)
 

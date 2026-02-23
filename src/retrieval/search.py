@@ -4,7 +4,7 @@ Search Engine
 receives a query / List of queries and returns files that semantically match the query
 """
 from infrastructure.database import DataBase
-from retrieval.embeddings import create_query_embeddings
+from processing.embeddings import create_query_embeddings
 
 from sqlite3 import Connection
 
@@ -21,7 +21,7 @@ def search(database: DataBase,
     
     query_embeddings = create_query_embeddings(queries)
 
-    results = database.vectorindex.search(query_embeddings, 20)
+    results = database.vectorindex.search(query_embeddings, 5)
 
     chunk_ids = [[i for i, _ in r] for r in results]
 
