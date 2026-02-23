@@ -41,6 +41,8 @@ def test_query_batch(database: DataBase, conn: sqlite3.Connection):
       print("\n")
 
     assert files != None
+    assert files[0][0].__contains__("texts")
+#     assert files[0][0].__contains__("images")
     assert files[0][0].__contains__("airplane")
     assert files[1][0].__contains__("animal") 
     assert files[2][0].__contains__("car")
