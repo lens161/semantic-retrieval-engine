@@ -1,59 +1,59 @@
-import pytest
+# import pytest
 
-import numpy as np
+# import numpy as np
 
-from infrastructure.vectorindex import Index
+# from infrastructure.vectorindex import Index
 
-from config import VECTOR_DIM
+# from config import VECTOR_DIM
 
-TEST_PATH_1 = "tests/data/test-index/test1.index"
-TEST_PATH_2 = "tests/data/test-index/test2.index"
+# TEST_PATH_1 = "tests/data/test-index/test1.index"
+# TEST_PATH_2 = "tests/data/test-index/test2.index"
 
-@pytest.fixture
-def index():
-    return Index(VECTOR_DIM, TEST_PATH_1, new=True)
+# @pytest.fixture
+# def index():
+#     return Index(VECTOR_DIM, TEST_PATH_1, new=True)
 
-def test_add_vectors(index: Index):
-    ids = np.array([10, 11])
-    vectors = np.ones((2, VECTOR_DIM), dtype="float32")
+# def test_add_vectors(index: Index):
+#     ids = np.array([10, 11])
+#     vectors = np.ones((2, VECTOR_DIM), dtype="float32")
 
-    index.add(vectors, ids)
+#     index.add(vectors, ids)
 
-    assert index.size() == 2
+#     assert index.size() == 2
 
-def test_add_invalid_shape(index: Index):
-    ids = np.array([1])
-    vectors = np.ones((VECTOR_DIM,), dtype="float32")
+# def test_add_invalid_shape(index: Index):
+#     ids = np.array([1])
+#     vectors = np.ones((VECTOR_DIM,), dtype="float32")
 
-    with pytest.raises(ValueError):
-        index.add(vectors, ids)
+#     with pytest.raises(ValueError):
+#         index.add(vectors, ids)
 
-def test_get_vector(index: Index):
-    ids = np.array([1])
-    vectors = np.ones((1, VECTOR_DIM), dtype="float32")
+# def test_get_vector(index: Index):
+#     ids = np.array([1])
+#     vectors = np.ones((1, VECTOR_DIM), dtype="float32")
 
-    index.add(vectors, ids)
+#     index.add(vectors, ids)
 
-    v = index.get(1)
+#     v = index.get(1)
 
-    assert isinstance(v, np.ndarray)
-    assert v.shape[0] == VECTOR_DIM
+#     assert isinstance(v, np.ndarray)
+#     assert v.shape[0] == VECTOR_DIM
 
-def test_search_returns_chunk_ids(index: Index):
-    ids = np.array([42, 99])
-    vectors = np.vstack([
-        np.ones(VECTOR_DIM),
-        np.zeros(VECTOR_DIM)
-    ]).astype("float32")
+# def test_search_returns_chunk_ids(index: Index):
+#     ids = np.array([42, 99])
+#     vectors = np.vstack([
+#         np.ones(VECTOR_DIM),
+#         np.zeros(VECTOR_DIM)
+#     ]).astype("float32")
 
-    index.add(vectors, ids)
-    print(vectors)
+#     index.add(vectors, ids)
+#     print(vectors)
 
-    query = np.ones(VECTOR_DIM, dtype="float32")
+#     query = np.ones(VECTOR_DIM, dtype="float32")
 
-    results = index.search(query, k=1)
-    print(results)
+#     results = index.search(query, k=1)
+#     print(results)
 
-    assert isinstance(results, list)
-    assert isinstance(results[0][0][1], np.float32)
-    assert results[0][0][0] in ids
+#     assert isinstance(results, list)
+#     assert isinstance(results[0][0][1], np.float32)
+#     assert results[0][0][0] in ids

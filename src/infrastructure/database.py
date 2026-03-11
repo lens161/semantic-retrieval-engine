@@ -7,44 +7,61 @@ file metadata from SQLite database.
 """
 
 import os
-import sqlite3
 import numpy as np
+import psycopg2
+from psycopg2 import sql
+from psycopg2.extensions import connection, cursor
+from psycopg2.extras import execute_values
+from pgvector.psycopg2 import register_vector
 
 import processing.embeddings as em
-from .vectorindex import Index
 
 class DataBase:
-    def __init__(self, volume_root: str, db: str, 
-                 vectorindex: Index):
+    
+    def __init__(self, volume_root: str, 
+                 db: str, 
+                 dim: int,
+                 host: str, 
+                 user: str,
+                 password: str,
+                 port: int):
         self.root = volume_root
         self.db = db
-        self.vectorindex = vectorindex
+        self.dim = dim
+        self.host = host
+        self.user = user
+        self.password = password
+        self.port = port
         self.initialise_database()
 
     def initialise_database(self) -> None:
-        conn = sqlite3.connect(self.db)
 
-        conn.execute("""
+        conn = self.connect()
+
+        cur = conn.cursor()
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        conn.commit()
+        cur.execute("""
         CREATE TABLE IF NOT EXISTS file (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            file_name TEXT NOT NULL,
-            file_type VARCHAR(8) NOT NULL,
-            path TEXT UNIQUE NOT NULL
+            id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            file_name TEXT,
+            file_type TEXT,
+            path TEXT UNIQUE
         )
         """)
         conn.commit()
-        conn.execute("""
+        chunk_query = sql.SQL("""
         CREATE TABLE IF NOT EXISTS chunk (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            file_id INTEGER NOT NULL,
-            FOREIGN KEY (file_id)
-                REFERENCES file(id)
+            id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            file_id INTEGER REFERENCES file(id),
+            embedding vector({})
         )
-        """)
+        """).format(sql.SQL(str(self.dim)))
+        cur.execute(chunk_query)
         conn.commit()
         conn.close()
 
-    def add_volume(self, conn: sqlite3.Connection, 
+    def add_volume(self, conn: connection, 
                    embedding_model = None) -> None:
         cursor = conn.cursor()
         for dirpath, _, files in os.walk(self.root):
@@ -63,73 +80,96 @@ class DataBase:
             
     def add_batch(self, files: list[tuple[str, str, str]],
                   chunk_embeds: list[np.ndarray], 
-                  cursor: sqlite3.Cursor) -> None:
+                  cursor: cursor) -> None:
         for i, f in enumerate(files):
             try:
                 self.add(f, chunk_embeds[i], cursor)
-            except sqlite3.IntegrityError:
+            except psycopg2.IntegrityError:
                 continue
 
     def add(self, file: tuple[str, str, str], 
             chunk_embeds: np.ndarray, 
-            cursor: sqlite3.Cursor) -> None:
-        
+            cursor: cursor):
+
         filename, file_type, path = file
 
-        n = len(chunk_embeds)
-
         cursor.execute(
-            """INSERT INTO file (file_name, file_type, path) VALUES(?, ?, ?)""", 
-            (filename, file_type, path))
-        file_id = cursor.lastrowid
-        chunk_ids = []
-        chunk_ids = []
-        for _ in range(n):
-            cursor.execute(
-                "INSERT INTO chunk (file_id) VALUES(?) RETURNING id",
-                (file_id,)
-            )
-            chunk_id = cursor.fetchone()[0]
-            chunk_ids.append(chunk_id)
+            """INSERT INTO file (file_name, file_type, path)
+               VALUES (%s, %s, %s)
+               RETURNING id""",
+            (filename, file_type, path)
+        )
 
-        self.transfer_to_vectorindex(chunk_embeds, chunk_ids)
+        file_id = cursor.fetchone()[0]
+
+        chunk_data = [(file_id, embed) for embed in chunk_embeds]
+
+        execute_values(
+            cursor,
+            """INSERT INTO chunk (file_id, embedding) VALUES %s""",
+            chunk_data
+        )
 
         return file_id
 
-    def transfer_to_vectorindex(self, chunk_embeds:np.ndarray, 
-                                chunk_ids:list) -> None:
-        
-        chunk_ids = np.array(chunk_ids)
-        self.vectorindex.add(chunk_embeds, chunk_ids)
+    def find_chunks(self, query: np.ndarray, 
+                   conn: connection, 
+                   k: int = 10) -> tuple:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT
+                            c.id,
+                            f.path,
+                            1 - (c.embedding <=> %s) AS similarity
+                        FROM chunk c
+                        JOIN file f ON c.file_id = f.id
+                        ORDER BY c.embedding <=> %s
+                        LIMIT %s
+                        """, 
+                        (query, query, k))
+            chunks = cur.fetchall()
+            # file_ids = np.array([file_id for (_, file_id, _) in chunks])
+            # frequencies = np.bincount(file_ids)
+            # ranking = np.argsort(frequencies)
 
-    def get_file(self, chunk_id: int, conn: sqlite3.Connection) -> tuple:
-        file = conn.execute(
-            """SELECT file_id FROM chunk WHERE id = ?""", (chunk_id, )
-            ).fetchone()
-        
+        return chunks
+
+    def get_file(self, chunk_id: int, cur: cursor) -> tuple:
+        cur.execute(
+            """SELECT file_id FROM chunk WHERE id = %s""", (chunk_id, )
+            )
+        file = cur.fetchone()
         return file[0]
     
     def get_all_files(self, chunk_ids: list[int], 
-                      conn: sqlite3.Connection):
+                      conn: connection):
+        cur = conn.cursor()
         file_ids = []
         for id in chunk_ids:
-            file_ids.append(self.get_file(id, conn))
+            file_ids.append(self.get_file(id, cur))
         file_ids = list(set(file_ids))
-        id_string = ",".join("?" * len(file_ids))
-        file_paths = conn.execute(
-                f"SELECT path FROM file WHERE id IN ({id_string})", 
-                file_ids,
-            ).fetchall()
-
+        id_string = ",".join(["%s"] * len(file_ids))
+        cur.execute(
+            f"SELECT path FROM file WHERE id IN ({id_string})", 
+            file_ids,
+            )
+        file_paths = cur.fetchall()
         return [fp[0] for fp in file_paths]
-    
+
     def get_database(self):
         return self.db
-    
-    def connect(self):
-        conn = sqlite3.connect(self.db)
+
+    def connect(self) -> connection:
+        conn = psycopg2.connect(
+            host=self.host,
+            port=self.port,
+            dbname=self.db,
+            user=self.user,
+            password=self.password
+        )
+        register_vector(conn)
         return conn
-    
-    def disconnect(self, conn: sqlite3.Connection):
+
+    def disconnect(self, conn: connection):
         conn.commit()
         conn.close()

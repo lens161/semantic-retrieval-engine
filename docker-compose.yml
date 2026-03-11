@@ -1,0 +1,11 @@
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: semantic-postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: semantic
+    ports:
+      - "5432:5432"

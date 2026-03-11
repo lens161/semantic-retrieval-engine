@@ -1,14 +1,15 @@
 import os
 import pytest
-import sqlite3
+import psycopg2
+from psycopg2 import sql
+from psycopg2.extensions import connection, cursor
 import numpy as np
 
 from infrastructure.database import DataBase
 from infrastructure.vectorindex import Index
 
 TEST_VOLUME = "tests/data/semantic_test_dataset"
-TEST_DB = 'tests/data/db/test.db'
-TEST_IDX = "tests/data/idx/test.idx"
+TEST_DB = 'semantic_test'
 TEST_DIM = 10
 
 TEST_VALUES_FILE_INPUT = [("file 1", "doc1", "data/file1"),
@@ -29,73 +30,37 @@ TEST_CHUNK_EMBEDS = [np.array([[1,1,1,1,1,1,1,1,1,1],
                      np.array([[3,1,1,1,1,1,1,1,1,1],
                               [3,2,2,2,2,2,2,2,2,2]], dtype="float32")]
 
-@pytest.fixture
+@pytest.fixture()
 def database():
-      idx = Index(TEST_DIM, TEST_IDX)
-      db = DataBase(TEST_VOLUME, TEST_DB, idx)
-      yield db
+      return DataBase(TEST_VOLUME, TEST_DB, TEST_DIM, 
+                      "localhost", "test", "test", 5433)
 
-      os.remove(TEST_IDX)
+@pytest.fixture()
+def database_full():
+      return DataBase(TEST_VOLUME, TEST_DB, 512, 
+                      "localhost", "test", "test", 5433)
 
 @pytest.fixture
 def conn(database: DataBase):
-      conn = sqlite3.connect(database.get_database())
-      yield conn # tests are run with this state of the database
 
-      # runs after tests to clean up:
-      conn.execute("""DROP TABLE IF EXISTS file""")
-      conn.execute("""DROP TABLE IF EXISTS chunk""")
+    conn = database.connect()
+    yield conn
 
-      conn.close()
+    cur = conn.cursor()
+    cur.execute("DROP TABLE IF EXISTS chunk CASCADE")
+    cur.execute("DROP TABLE IF EXISTS file CASCADE")
+    conn.commit()
 
-def test_correct_initialisation_of_tables(conn: sqlite3.Connection):
-      c = conn.cursor()
-      c.execute("""SELECT name FROM sqlite_master WHERE type='table'
-                AND name NOT LIKE 'sqlite_%' """)
-      tables = [row[0] for row in c.fetchall()]
-      c.execute("""PRAGMA table_info(file)""")
-      file_table_info = c.fetchall()
-      file_columns = [c[1] for c in file_table_info]
-      file_columns_types = [c[2] for c in file_table_info]
-      c.execute("""PRAGMA table_info(chunk)""")
-      chunk_table_info = c.fetchall()
-      chunk_columns = [c[1] for c in chunk_table_info]
-      chunk_columns_types = [c[2] for c in chunk_table_info]
+    conn.close()
 
-      assert "file" in tables
-      assert "chunk" in tables
-
-      assert "id" in file_columns
-      assert "file_name" in file_columns
-      assert "path" in file_columns
-      assert file_columns_types[0] == "INTEGER"
-      assert file_columns_types[1] == "TEXT"
-      assert "VARCHAR" in file_columns_types[2]
-      assert file_columns_types[3] == "TEXT"
-
-      assert "id" in chunk_columns
-      assert "file_id" in chunk_columns
-      assert chunk_columns_types[0] == "INTEGER"
-      assert chunk_columns_types[1] == "INTEGER"
-
-def test_transfer_to_vectorindex(database: DataBase):
-      database.transfer_to_vectorindex(TEST_CHUNK_EMBEDS[0], [1, 2, 3])
-      database.transfer_to_vectorindex(TEST_CHUNK_EMBEDS[1], [4, 5])
-      database.transfer_to_vectorindex(TEST_CHUNK_EMBEDS[2], [100, 200])
-      assert np.array_equal(TEST_CHUNK_EMBEDS[0][0], database.vectorindex.get(1))
-      assert np.array_equal(TEST_CHUNK_EMBEDS[0][1], database.vectorindex.get(2))
-      assert np.array_equal(TEST_CHUNK_EMBEDS[0][2], database.vectorindex.get(3))
-      assert np.array_equal(TEST_CHUNK_EMBEDS[1][0], database.vectorindex.get(4))
-      assert np.array_equal(TEST_CHUNK_EMBEDS[1][1], database.vectorindex.get(5))
-      assert np.array_equal(TEST_CHUNK_EMBEDS[2][0], database.vectorindex.get(100))
-      assert np.array_equal(TEST_CHUNK_EMBEDS[2][1], database.vectorindex.get(200))
-
-def test_add(conn: sqlite3.Connection, database: DataBase):
+def test_add(conn: connection, database: DataBase):
       c = conn.cursor()
       for file, embeds in zip(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS):
             database.add(file, embeds, c)
-      files = conn.execute("""SELECT * FROM file""").fetchall()
-      embed_ids = conn.execute("""SELECT id FROM chunk WHERE file_id=1""").fetchall()
+      c.execute("""SELECT * FROM file""")
+      files = c.fetchall()
+      c.execute("""SELECT id FROM chunk WHERE file_id=1""")
+      embed_ids = c.fetchall()
       embed_ids = [id[0] for id in embed_ids]
 
       assert TEST_VALUES_FILE_IN_DB[0] in files
@@ -104,12 +69,14 @@ def test_add(conn: sqlite3.Connection, database: DataBase):
 
       assert embed_ids == [1, 2, 3]
 
-def test_add_batch(conn: sqlite3.Connection, database: DataBase):
+def test_add_batch(conn: connection, database: DataBase):
       c = conn.cursor()
       database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, c)
 
-      files = conn.execute("""SELECT * FROM file""").fetchall()
-      embed_ids = conn.execute("""SELECT id FROM chunk WHERE file_id=1""").fetchall()
+      c.execute("""SELECT * FROM file""")
+      files = c.fetchall()
+      embed_ids = c.execute("""SELECT id FROM chunk WHERE file_id=1""")
+      embed_ids = c.fetchall()
       embed_ids = [id[0] for id in embed_ids]
 
       assert TEST_VALUES_FILE_IN_DB[0] in files
@@ -118,20 +85,20 @@ def test_add_batch(conn: sqlite3.Connection, database: DataBase):
 
       assert embed_ids == [1, 2, 3]
 
-def test_get_file(conn: sqlite3.Connection, database: DataBase):
+def test_get_file(conn: connection, database: DataBase):
       c = conn.cursor()
       database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, c)
 
-      file1 = database.get_file(2, conn)
-      file2 = database.get_file(4, conn)
-      file3 = database.get_file(6, conn)
+      file1 = database.get_file(2, c)
+      file2 = database.get_file(4, c)
+      file3 = database.get_file(6, c)
       print(file1)
 
       assert file1 == TEST_VALUES_FILE_IN_DB[0][0]
       assert file2 == TEST_VALUES_FILE_IN_DB[1][0]
       assert file3 == TEST_VALUES_FILE_IN_DB[2][0]
 
-def test_get_all(conn: sqlite3.Connection, database: DataBase):
+def test_get_all(conn: connection, database: DataBase):
       c = conn.cursor()
       database.add_batch(TEST_VALUES_FILE_INPUT, TEST_CHUNK_EMBEDS, c)
       chunk_ids = [4, 5, 7]
@@ -146,21 +113,25 @@ def test_get_all(conn: sqlite3.Connection, database: DataBase):
       assert filepaths == correct_paths
       assert single_path == correct_single_path
 
-def test_add_volume():
+def test_add_volume(database_full: DataBase):
     
-      idx = Index(512, TEST_IDX)
-      database = DataBase(TEST_VOLUME, TEST_DB, idx)
+      db = database_full
 
-      conn = sqlite3.connect(database.get_database())
+      conn = db.connect()
 
-      database.add_volume(conn)
-      files = conn.execute("SELECT * FROM file").fetchall()
-      chunks = conn.execute("SELECT * FROM chunk").fetchall()
+      db.add_volume(conn)
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM file")
+      files = cursor.fetchall()
+      cursor.execute("SELECT * FROM chunk")
+      chunks = cursor.fetchall()
 
-      search_result = database.get_file(1, conn)
+      search_result = db.get_file(1, cursor)
 
-      conn.execute("""DROP TABLE IF EXISTS file""")
-      conn.execute("""DROP TABLE IF EXISTS chunk""")
+      cursor.execute("""DROP TABLE IF EXISTS chunk""")
+      cursor.execute("""DROP TABLE IF EXISTS file""")
+      conn.commit()
+      cursor.close()
       conn.close()
 
       assert len(files) > 0
