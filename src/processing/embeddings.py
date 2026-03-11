@@ -35,7 +35,8 @@ def embed(path: str,
     elif filetype.__contains__("ASCII"):
         chunks = extract_txt_md(path)
     elif filetype.__contains__("JPEG") or filetype.__contains__("PNG"):
-        chunks = [Image.open(path)]
+        img = Image.open(path).convert("RGB")
+        chunks = [img]
     
     embeddings = model.encode(chunks, convert_to_numpy=True, normalize_embeddings=True)
 
