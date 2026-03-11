@@ -1,12 +1,10 @@
-import os
-import pytest
-import psycopg2
-from psycopg2 import sql
-from psycopg2.extensions import connection, cursor
 import numpy as np
+import pytest
+from psycopg2 import sql
+from psycopg2.extensions import connection
 
 from infrastructure.database import DataBase
-from infrastructure.vectorindex import Index
+from processing.embeddings import create_query_embeddings
 
 TEST_VOLUME = "tests/data/semantic_test_dataset"
 TEST_DB = 'semantic_test'
@@ -137,3 +135,17 @@ def test_add_volume(database_full: DataBase):
       assert len(files) > 0
       assert len(chunks) > 0
       assert search_result != None
+
+def test_find_chunks(database_full: DataBase):
+      db = database_full
+      conn = db.connect()
+      db.add_volume(conn)
+
+      query = create_query_embeddings(["airplanes"])
+      print(type(query))
+
+      chunks = database_full.find_chunks(query, conn, 10)
+      conn.close()
+
+      assert chunks != None 
+      assert chunks[0][1].__contains__("airplane")
