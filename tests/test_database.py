@@ -142,9 +142,8 @@ def test_find_chunks(database_full: DataBase):
       db.add_volume(conn)
 
       query = create_query_embeddings(["airplanes"])
-      print(type(query))
 
-      chunks = database_full.find_chunks(query, conn, 10)
+      chunks = database_full.find_chunks(query[0], conn, 10)
       conn.close()
 
       assert chunks != None 
