@@ -147,4 +147,22 @@ def test_find_chunks(database_full: DataBase):
       conn.close()
 
       assert chunks != None 
-      assert chunks[0][1].__contains__("airplane")
+      assert chunks[0][3].__contains__("airplane")
+
+def test_find_chunks_multiple_queries(database_full: DataBase):
+      db = database_full
+      conn = db.connect()
+      db.add_volume(conn)
+
+      queries = create_query_embeddings(["airplanes", "dog", "car"])
+
+      chunks = database_full.find_chunks(queries, conn, 10)
+      conn.close()
+
+      assert chunks != None 
+      assert chunks[0][3].__contains__("airplane")
+      assert chunks[1][3].__contains__("animal")
+      assert chunks[2][3].__contains__("cars")
+      assert chunks[0][3].__contains__("images")
+      assert chunks[1][3].__contains__("images")
+      assert chunks[2][3].__contains__("images")

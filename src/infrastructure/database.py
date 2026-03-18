@@ -114,48 +114,32 @@ class DataBase:
 
     def find_chunks(self, query: np.ndarray, 
                    conn: connection, 
-                   k: int = 10) -> tuple:
+                   k: int = 10) -> list[list[tuple[int, int, float, str]]]:
+        
+        results = []
         with conn.cursor() as cur:
-            cur.execute("""
+            for q in query:
+                results.append(self.query(q, k, cur))
+        return results
+
+    def query(self, query: np.ndarray, 
+              k:int, 
+              cur:cursor) -> list[tuple[int, int, float, str]]:
+        cur.execute("""
                         SELECT
                             c.id,
-                            f.path,
-                            1 - (c.embedding <=> %s) AS similarity
+                            f.id,
+                            1 - (c.embedding <=> %s) AS similarity,
+                            f.path
                         FROM chunk c
                         JOIN file f ON c.file_id = f.id
                         ORDER BY c.embedding <=> %s
                         LIMIT %s
                         """, 
                         (query, query, k))
-            chunks = cur.fetchall()
-            # file_ids = np.array([file_id for (_, file_id, _) in chunks])
-            # frequencies = np.bincount(file_ids)
-            # ranking = np.argsort(frequencies)
-
+        chunks = cur.fetchall()
         return chunks
-
-    def get_file(self, chunk_id: int, cur: cursor) -> tuple:
-        cur.execute(
-            """SELECT file_id FROM chunk WHERE id = %s""", (chunk_id, )
-            )
-        file = cur.fetchone()
-        return file[0]
     
-    def get_all_files(self, chunk_ids: list[int], 
-                      conn: connection):
-        cur = conn.cursor()
-        file_ids = []
-        for id in chunk_ids:
-            file_ids.append(self.get_file(id, cur))
-        file_ids = list(set(file_ids))
-        id_string = ",".join(["%s"] * len(file_ids))
-        cur.execute(
-            f"SELECT path FROM file WHERE id IN ({id_string})", 
-            file_ids,
-            )
-        file_paths = cur.fetchall()
-        return [fp[0] for fp in file_paths]
-
     def get_database(self):
         return self.db
 
