@@ -1,13 +1,13 @@
-import processing.embeddings as em
-from infrastructure.vectorindex import Index
+# import processing.embeddings as em
+# from infrastructure.vectorindex import Index
 
-import numpy as np
+# import numpy as np
 
-from config import EMBEDDING_MODEL, VECTOR_DIM, INDEX_PATH
-from sentence_transformers import SentenceTransformer
+# from config import EMBEDDING_MODEL, VECTOR_DIM, INDEX_PATH
+# from sentence_transformers import SentenceTransformer
 
-def main():
-    pass
+# def main():
+#     pass
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

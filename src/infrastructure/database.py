@@ -76,6 +76,7 @@ class DataBase:
                 chunk_embeds.append(embeds)
                 file_list.append((file, file_type, full_path))
             self.add_batch(file_list, chunk_embeds, cursor)
+            conn.commit()
         cursor.close()
             
     def add_batch(self, files: list[tuple[str, str, str]],
@@ -86,6 +87,9 @@ class DataBase:
                 self.add(f, chunk_embeds[i], cursor)
             except psycopg2.IntegrityError:
                 continue
+            finally:
+                cursor.connection.commit()
+        cursor.connection.commit()
 
     def add(self, file: tuple[str, str, str], 
             chunk_embeds: np.ndarray, 
@@ -118,8 +122,11 @@ class DataBase:
         
         results = []
         with conn.cursor() as cur:
-            for q in query:
-                results.append(self.query(q, k, cur))
+            if query.ndim == 1:
+                results.append(self.query(query, k, cur))
+            else:
+                for q in query:
+                    results.append(self.query(q, k, cur))
         return results
 
     def query(self, query: np.ndarray, 
