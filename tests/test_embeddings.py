@@ -42,6 +42,8 @@ def test_chunking(test_files):
     print(len(md_chunks))
     print(len(txt_chunks))
 
+    # ranges only work for current test files 
+    # and for CHUNKSIZE = 30 referring to amount of lines per chunk
     assert len(docx_chunks) > 60 and len(docx_chunks)   < 70
     assert len(pdf_chunks)  > 60 and len(pdf_chunks)    < 70
     assert len(md_chunks)   > 60 and len(md_chunks)     < 70
