@@ -141,19 +141,34 @@ def fetch_wikipedia_text(title: str):
 # Clean HTML
 # ============================================================
 
+import textwrap
+
 def clean_html(html: str):
     soup = BeautifulSoup(html, "html.parser")
 
+    # Remove junk
     for tag in soup(["table", "sup", "style", "script"]):
         tag.decompose()
 
-    text = soup.get_text(separator="\n")
+    paragraphs = []
 
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    for p in soup.find_all("p"):
+        # Inline sauber zusammenführen
+        text = p.get_text(" ", strip=True)
 
-    return "\n".join(lines)
+        # Whitespace normalisieren
+        text = " ".join(text.split())
 
+        if len(text) > 50:
+            paragraphs.append(text)
 
+    # Jetzt kontrolliertes Wrapping pro Absatz
+    wrapped_paragraphs = [
+        textwrap.fill(p, width=100)
+        for p in paragraphs
+    ]
+
+    return "\n\n".join(wrapped_paragraphs)
 # ============================================================
 # Generate texts (NO CHUNKING)
 # ============================================================

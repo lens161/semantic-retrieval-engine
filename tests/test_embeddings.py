@@ -30,6 +30,23 @@ def test_files():
         "tests/data/docs/000000096549.png"
     ]
 
+def test_chunking(test_files):
+    docx, pdf, md, txt = test_files[:4]
+
+    docx_chunks = em.extract_docx(docx)
+    pdf_chunks = em.extract_pdf(pdf)
+    md_chunks = em.extract_txt_md(md)
+    txt_chunks = em.extract_txt_md(txt)
+    print(len(docx_chunks))
+    print(len(pdf_chunks))
+    print(len(md_chunks))
+    print(len(txt_chunks))
+
+    assert len(docx_chunks) > 60 and len(docx_chunks)   < 70
+    assert len(pdf_chunks)  > 60 and len(pdf_chunks)    < 70
+    assert len(md_chunks)   > 60 and len(md_chunks)     < 70
+    assert len(txt_chunks)  > 60 and len(pdf_chunks)    < 70
+
 def test_embed_correct_shape_and_dtype(fake_model, test_files):
     for file in test_files:
         _, embeddings = em.embed(str(file), fake_model)
@@ -54,3 +71,12 @@ def test_create_query_embeddings_correct_shape_and_dtype(fake_model):
     assert isinstance(vectors, np.ndarray)
     assert vectors.shape == (2, VECTOR_DIM)
     assert vectors.dtype == np.float32
+
+def test_embed_real_model(test_files):
+    tf = test_files[:4]
+
+    embeds = [em.embed(f)[1] for f in tf]
+
+    for embeddings in embeds:
+        for e in embeddings:
+            assert e.shape[0] == 512

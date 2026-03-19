@@ -24,7 +24,7 @@ else:
     MODEL = SentenceTransformer(MODEL_PATH)
 
 def embed(path: str, 
-          model: SentenceTransformer = MODEL) -> tuple[int, np.ndarray]:
+          model: SentenceTransformer = MODEL) -> tuple[str, np.ndarray]:
     filetype = str(from_file(path))
 
     chunks = []
@@ -32,11 +32,12 @@ def embed(path: str,
         chunks = extract_docx(path)
     elif filetype.__contains__("PDF"):
         chunks = extract_pdf(path)
-    elif filetype.__contains__("ASCII"):
+    elif filetype.__contains__("Unicode text") or filetype.__contains__("ASCII"):
         chunks = extract_txt_md(path)
     elif filetype.__contains__("JPEG") or filetype.__contains__("PNG"):
         img = Image.open(path).convert("RGB")
         chunks = [img]
+    print(len(chunks))
     
     embeddings = model.encode(chunks, convert_to_numpy=True, normalize_embeddings=True)
 
@@ -44,28 +45,38 @@ def embed(path: str,
 
 def extract_docx(path: str) -> list[str]:
     doc = docx.Document(path)
-    text = [p.text for p in doc.paragraphs]
-    return text
+    lines = []
+    for p in doc.paragraphs:
+        lines.extend(p.text.split("\n"))
+    chunks = chunk(lines)
+    return chunks
 
 def extract_pdf(path: str) -> list[str]:
     with open(path, 'rb') as f:
         reader = PdfReader(f)
         pages = [p.extract_text() for p in reader.pages]
+        lines = []
+        for p in pages:
+            lines.extend(p.split("\n"))
     return pages
         
 def extract_txt_md(path: str) -> list[str]:
     with open(path, 'r') as f:
         lines = f.readlines()
-        size = len(lines)
-        paragraphs = []
-        i = 0 
-        while i < size:
-            if i + CHUNK_SIZE > size:
-               paragraphs.append(str(lines[i:]))
-            else:
-                paragraphs.append(str(lines[i:i+CHUNK_SIZE]))
-            i += CHUNK_SIZE
-    return paragraphs
+        chunks = chunk(lines)
+    return chunks
+
+def chunk(lines):
+    size = len(lines)
+    chunks = []
+    i = 0 
+    while i < size:
+        if i + CHUNK_SIZE > size:
+           chunks.append(str(lines[i:]))
+        else:
+            chunks.append(str(lines[i:i+CHUNK_SIZE]))
+        i += CHUNK_SIZE
+    return chunks
 
 def create_query_embeddings(queries: list[str], 
                             model:SentenceTransformer = MODEL) -> np.ndarray:

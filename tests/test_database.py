@@ -46,8 +46,8 @@ def conn(database: DataBase):
     yield conn
 
     cur = conn.cursor()
-    cur.execute("DROP TABLE IF EXISTS chunk CASCADE")
-    cur.execute("DROP TABLE IF EXISTS file CASCADE")
+    cur.execute("DROP TABLE IF EXISTS chunk")
+    cur.execute("DROP TABLE IF EXISTS file")
     conn.commit()
 
     conn.close()
@@ -86,23 +86,33 @@ def test_add_batch(conn: connection, database: DataBase):
 
       assert embed_ids == [1, 2, 3]
 
-def test_find_chunks(database_full: DataBase):
+def test_add_volume(database_full: DataBase):
+      """conveniently also fills the database for subsequent tests"""
       db = database_full
       conn = db.connect()
       db.add_volume(conn)
+      count = db.size(conn)
+      db.disconnect(conn)
+      print(count)
+
+      assert count[0] > 0
+      assert count[1] > 0
+
+def test_find_chunks(database_full: DataBase):
+      db = database_full
+      conn = db.connect()
 
       query = create_query_embeddings(["airplanes"])
 
       chunks = database_full.find_chunks(query[0], conn, 10)
       conn.close()
-
+      print(chunks)
       assert chunks != None 
       assert chunks[0][0][3].__contains__("airplane")
 
 def test_find_chunks_multiple_queries(database_full: DataBase):
       db = database_full
       conn = db.connect()
-      db.add_volume(conn)
 
       queries = create_query_embeddings(["airplanes", "dog", "car"])
 
@@ -117,11 +127,10 @@ def test_find_chunks_multiple_queries(database_full: DataBase):
 def test_images_found(database_full: DataBase):
       db = database_full
       conn = db.connect()
-      db.add_volume(conn)
 
       queries = create_query_embeddings(["airplanes"])
 
-      chunks = database_full.find_chunks(queries, conn, 10)[0]
+      chunks = database_full.find_chunks(queries, conn, 1000)[0]
 
       conn.close()
 

@@ -85,7 +85,9 @@ class DataBase:
         for i, f in enumerate(files):
             try:
                 self.add(f, chunk_embeds[i], cursor)
-            except psycopg2.IntegrityError:
+            except psycopg2.IntegrityError as e:
+                print("IntegrityError:", e)
+                cursor.connection.rollback()
                 continue
             finally:
                 cursor.connection.commit()
@@ -149,6 +151,15 @@ class DataBase:
     
     def get_database(self):
         return self.db
+    
+    def size(self, conn: connection) -> int:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM chunk")
+        chunk_count = cur.fetchall()[0][0]
+        cur.execute("SELECT COUNT(*) FROM file")
+        file_count = cur.fetchall()[0][0]
+        return chunk_count, file_count
+        
 
     def connect(self) -> connection:
         conn = psycopg2.connect(
