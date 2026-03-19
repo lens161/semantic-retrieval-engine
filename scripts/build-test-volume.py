@@ -1,15 +1,19 @@
 """
-AI generated script for quickly creating a semantic dummy volume
-for testing volume ingestion/index and semantic retrieval.
+Semantic test dataset builder using FULL Wikipedia articles (NO CHUNKING).
+Each document = one full Wikipedia article.
 """
 
 import json
+import time
+import requests
 from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
+from bs4 import BeautifulSoup
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from docx import Document
+
 
 # ============================================================
 # Configuration
@@ -27,7 +31,42 @@ CATEGORY_MAPPING = {
 }
 
 IMAGES_PER_CATEGORY = 10
-TEXTS_PER_CATEGORY = 10
+
+
+# ============================================================
+# Wikipedia Sources (1 FILE = 1 ARTICLE)
+# ============================================================
+
+WIKIPEDIA_SOURCES = {
+    "boats": [
+        "Boat",
+        "Ship",
+        "Naval architecture",
+        "Hull (watercraft)",
+        "Sailing"
+    ],
+    "airplanes": [
+        "Aircraft",
+        "Airplane",
+        "Aviation",
+        "Jet engine",
+        "Aerodynamics"
+    ],
+    "cars": [
+        "Car",
+        "Automobile",
+        "Electric car",
+        "Internal combustion engine",
+        "Vehicle"
+    ],
+    "animals": [
+        "Animal",
+        "Dog",
+        "Mammal",
+        "Zoology",
+        "Wildlife"
+    ]
+}
 
 
 # ============================================================
@@ -43,7 +82,7 @@ def verify_coco():
 
 
 # ============================================================
-# Create output folder structure
+# Create folder structure
 # ============================================================
 
 def create_structure():
@@ -53,85 +92,89 @@ def create_structure():
 
 
 # ============================================================
-# Resize image and save as JPG + PNG
+# Image processing
 # ============================================================
 
 def resize_and_save_image(src_path: Path, dst_base: Path):
-    """
-    Resize image to max 800px and save as both JPG and PNG.
-    dst_base must be path WITHOUT extension.
-    """
     img = Image.open(src_path).convert("RGB")
     img.thumbnail((800, 800))
 
-    # Save JPG
     img.save(dst_base.with_suffix(".jpg"), format="JPEG", quality=90)
-
-    # Save PNG
     img.save(dst_base.with_suffix(".png"), format="PNG")
 
 
 # ============================================================
-# Generate meaningful texts
+# Wikipedia FULL article fetch
+# ============================================================
+
+def fetch_wikipedia_text(title: str):
+    url = "https://en.wikipedia.org/w/api.php"
+
+    headers = {
+        "User-Agent": "semantic-retrieval-test/1.0"
+    }
+
+    params = {
+        "action": "parse",
+        "page": title,
+        "prop": "text",
+        "format": "json"
+    }
+
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+
+        html = response.json()["parse"]["text"]["*"]
+        text = clean_html(html)
+
+        time.sleep(0.5)
+
+        return text
+
+    except Exception as e:
+        print(f"[WARN] Failed to fetch {title}: {e}")
+        return ""
+
+
+# ============================================================
+# Clean HTML
+# ============================================================
+
+def clean_html(html: str):
+    soup = BeautifulSoup(html, "html.parser")
+
+    for tag in soup(["table", "sup", "style", "script"]):
+        tag.decompose()
+
+    text = soup.get_text(separator="\n")
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    return "\n".join(lines)
+
+
+# ============================================================
+# Generate texts (NO CHUNKING)
 # ============================================================
 
 def generate_texts(category_name):
-    base_descriptions = {
-        "boats": [
-            "Boats are watercraft designed for travel across rivers, lakes, and oceans.",
-            "Modern boats range from small fishing vessels to large cargo ships.",
-            "Sailboats rely on wind power, while motorboats use combustion engines.",
-            "Boats are commonly used for recreation, transport, and maritime trade.",
-            "Harbors and marinas provide infrastructure for boats.",
-            "Naval engineering focuses on hull design and buoyancy.",
-            "Passenger boats are used in tourism and transportation.",
-            "Some boats are built specifically for racing competitions.",
-            "Fishing boats operate in coastal and deep-sea environments.",
-            "Cargo ships transport goods between international ports."
-        ],
-        "airplanes": [
-            "Airplanes are fixed-wing aircraft used for air transportation.",
-            "Commercial airplanes transport passengers across continents.",
-            "Jet engines allow airplanes to reach high cruising speeds.",
-            "Airplanes require runways for takeoff and landing.",
-            "Cargo aircraft are designed to transport freight by air.",
-            "Military airplanes are used for defense and reconnaissance.",
-            "Air travel connects cities across the globe.",
-            "Aircraft engineering focuses on aerodynamics and lift.",
-            "Propeller airplanes are often used for regional flights.",
-            "Modern airplanes rely on advanced navigation systems."
-        ],
-        "cars": [
-            "Cars are motor vehicles designed for road transportation.",
-            "Electric cars use battery-powered propulsion systems.",
-            "Sports cars are optimized for speed and acceleration.",
-            "Cars are central to mobility in urban environments.",
-            "Autonomous cars rely on sensors and machine learning.",
-            "Family cars prioritize safety and passenger comfort.",
-            "Hybrid cars combine combustion engines with electric motors.",
-            "Cars operate on highways, streets, and rural roads.",
-            "Vehicle design includes engine, chassis, and suspension.",
-            "Car manufacturing is a major global industry."
-        ],
-        "animals": [
-            "Animals are living organisms capable of movement and perception.",
-            "Dogs are domesticated animals often kept as pets.",
-            "Wild animals inhabit forests, grasslands, and oceans.",
-            "Animal behavior is studied in zoology.",
-            "Mammals are warm-blooded vertebrates.",
-            "Animals play important roles in ecosystems.",
-            "Some animals are used in agricultural environments.",
-            "Wildlife conservation protects endangered species.",
-            "Animal habitats range from urban to remote regions.",
-            "Domesticated animals assist humans in various tasks."
-        ]
-    }
+    titles = WIKIPEDIA_SOURCES[category_name]
 
-    return base_descriptions[category_name]
+    texts = []
+
+    for title in titles:
+        print(f"[INFO] Fetching: {title}")
+        text = fetch_wikipedia_text(title)
+
+        if text and len(text) > 500:  # ensure meaningful size
+            texts.append(text)
+
+    return texts
 
 
 # ============================================================
-# Save text files in multiple formats
+# Save text files
 # ============================================================
 
 def save_text_variants(folder: Path, category: str, texts):
@@ -157,13 +200,14 @@ def save_text_variants(folder: Path, category: str, texts):
         doc.add_paragraph(text)
         doc.save(folder / f"{category}_{idx}.docx")
 
+
 # ============================================================
 # Main builder
 # ============================================================
 
 def build_dataset():
     print("========================================")
-    print("Building compact semantic retrieval dataset (10x10)")
+    print("Building dataset (FULL ARTICLES, NO CHUNKING)")
     print("========================================")
 
     verify_coco()
@@ -209,13 +253,13 @@ def build_dataset():
 
     print("[OK] Image extraction completed.")
 
-    print("[INFO] Generating text files...")
+    print("[INFO] Generating full Wikipedia articles...")
 
     for category in CATEGORY_MAPPING.values():
         texts = generate_texts(category)
         save_text_variants(OUTPUT_DIR / category / "texts", category, texts)
 
-    # Ground truth file
+    # Ground truth
     ground_truth = {
         category: {"expected_folder": category}
         for category in CATEGORY_MAPPING.values()
@@ -224,9 +268,9 @@ def build_dataset():
     with open(OUTPUT_DIR / "ground_truth.json", "w", encoding="utf-8") as f:
         json.dump(ground_truth, f, indent=2)
 
-    print("[SUCCESS] Dataset built successfully.")
-    print("10 images per category (JPG + PNG)")
-    print("10 texts per category (txt, md, pdf, docx)")
+    print("[SUCCESS] Dataset built.")
+    print("✔ Full articles (no chunking)")
+    print("✔ One document = one article")
 
 
 # ============================================================

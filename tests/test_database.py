@@ -121,7 +121,7 @@ def test_images_found(database_full: DataBase):
 
       queries = create_query_embeddings(["airplanes"])
 
-      chunks = database_full.find_chunks(queries, conn, 280)[0]
+      chunks = database_full.find_chunks(queries, conn, 10)[0]
 
       conn.close()
 
