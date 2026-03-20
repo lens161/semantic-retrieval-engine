@@ -3,10 +3,11 @@ import pytest
 from psycopg2 import sql
 from psycopg2.extensions import connection
 
-from infrastructure.database import DataBase
+from infrastructure.database import DataBase, PathError
 from processing.embeddings import create_query_embeddings
 
 TEST_VOLUME = "tests/data/semantic_test_dataset"
+TEST_VOLUME_WRONG = "tests/data/some_wrong_path"
 TEST_DB = 'semantic_test_10'
 TEST_DB_FULL = 'semantic_test_512'
 TEST_DIM = 10
@@ -53,6 +54,12 @@ def conn(database: DataBase):
     conn.close()
 
     database.initialise_database()
+
+def test_wrong_volume_path_throws():
+      with pytest.raises(PathError):
+            db = DataBase(TEST_VOLUME_WRONG, TEST_DB, TEST_DIM, 
+                    "localhost", "test", "test", 5433)
+            del db
 
 def test_add(conn: connection, database: DataBase):
       c = conn.cursor()

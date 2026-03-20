@@ -25,7 +25,10 @@ class DataBase:
                  user: str,
                  password: str,
                  port: int):
-        self.root = volume_root
+        if os.path.exists(volume_root):
+            self.root = volume_root
+        else: 
+            raise PathError(f"{volume_root} is not a valid directory")
         self.db = db
         self.dim = dim
         self.host = host
@@ -175,3 +178,8 @@ class DataBase:
     def disconnect(self, conn: connection):
         conn.commit()
         conn.close()
+
+class PathError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
